@@ -2,14 +2,15 @@
 
 
 # $UNAME_R is the currently running kernel or the kernel you wish to build
-# UNAME_R=$(uname -r)
-UNAME_R=6.5.0-21-generic
+# UNAME_R=6.5.0-21-generic
 # UNAME_R=6.5.0-26-generic
+UNAME_R=$(uname -r)
 
 
 # https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel
 
 
+# Enable apt deb-src repositories to get kernel sources
 source /etc/os-release
 # VERSION_CODENAME=jammy
 echo Uncomment the following lines from /etc/apt/sources.list
@@ -25,8 +26,19 @@ sudo cp -f /tmp/sources.list.2.$$ /etc/apt/sources.list
 
 sudo apt-get -y update
 sudo apt-get -y build-dep linux linux-image-unsigned-${UNAME_R}
-
 sudo apt-get -y install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
+
+
+# /boot/config-6.5.0-21-generic
+# CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0"
+sudo apt-get -y install gcc-12
+gcc --version
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
+yes "" | sudo update-alternatives --config gcc
+gcc --version
+# gcc (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+
 
 uname -r
 apt source linux-image-unsigned-${UNAME_R}
@@ -34,81 +46,153 @@ apt source linux-image-unsigned-${UNAME_R}
 cd linux-hwe-6.5-6.5.0
 
 
-chmod a+x debian/rules
-chmod a+x debian/scripts/*
-chmod a+x debian/scripts/misc/*
+# chmod a+x debian/rules
+# chmod a+x debian/scripts/*
+# chmod a+x debian/scripts/misc/*
 
 
-# https://discourse.ubuntu.com/t/kernel-configuration-in-ubuntu/35857
-./debian/scripts/misc/annotations --arch amd64 --flavour generic --export > .config
-
-# cp /boot/config-${UNAME_R} .config # make oldconfig will do this if needed
-#make olddefconfig 
+cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment to 6.5.13?
+# make olddefconfig 
 # make menuconfig # This is the text based menu config 
 # make xconfig # This is the GUI based menu config 
 #
-# Enable CONFIG_CXL_MEM_RAW_COMMANDS:
+# Enable CONFIG_CXL_MEM_RAW_COMMANDS=y
 # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
 #   [*] RAW Command Interface for Memory Devices (default=[_])
+#
 sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
 mv .config.cxl_raw_y .config 
 grep CONFIG_CXL_MEM_RAW_COMMANDS .config
-
-./debian/scripts/misc/annotations --arch amd64 --flavour generic --import .config
-# find . -name .config
-# grep CONFIG_CXL_MEM_RAW_COMMANDS ./debian/build/build-generic/source/.config
-grep -R CONFIG_CXL_MEM_RAW_COMMANDS debian*
-# debian.hwe-6.5/config/annotations:CONFIG_CXL_MEM_RAW_COMMANDS                     policy<{'amd64': 'y', 'arm64': 'n', 'armhf': 'n', 'ppc64el': 'n', 'riscv64': 'n', 's390x': '-'}>^M
-# debian.master/changelog:    - [Config] Disable CONFIG_CXL_MEM_RAW_COMMANDS on riscv64^M
-# debian.master/config/annotations:CONFIG_CXL_MEM_RAW_COMMANDS                     policy<{'amd64': 'n', 'arm64': 'n', 'armhf': 'n', 'ppc64el': 'n', 'riscv64': 'n', 's390x': '-'}>^M
+# CONFIG_CXL_MEM_RAW_COMMANDS=y
 
 
-fakeroot debian/rules clean
-
-# Must be done before 'fakeroot debian/rules updateconfigs' to rm .config:
-# *** The source tree is not clean, please run 'make ARCH=x86 mrproper'
-# *** in /home/rcpao/Documents/job/sgh/ubuntu-linux-kernel/6.5.0-26-generic/linux-hwe-6.5-6.5.0
-make ARCH=x86 mrproper
-
-# yes n | fakeroot debian/rules editconfigs # you need to go through each (Y, Exit, Y, Exit..) or get a complaint about config later
-fakeroot debian/rules updateconfigs
-
-fakeroot debian/rules binary-headers binary-generic binary-perarch
-# ./debian/build/build-generic/.config has now been created
-
-# fakeroot debian/rules binary
-exit
-
-
-# https://docs.kernel.org/kbuild/modules.html#targets
-# The default will build the module(s) located in the current directory,
-# so a target does not need to be specified. All output files will also be
-# generated in this directory. No attempts are made to update the kernel
-# source, and it is a precondition that a successful “make” has been
-# executed for the kernel.
+# Copy /usr/src/linux-headers-${UNAME_R}/Module.symvers
 #
-# make && make modules_install && make install
-# 
-#make -j36 clean
-make -j36 
-make -j36 modules
-sudo make modules_install
-sudo make install
-sudo depmod ${UNAME_R}
-#
-# make -j36 -C $PWD M=$PWD/drivers/cxl clean
-#make -j36 -C $PWD M=$PWD/drivers/cxl modules
-#sudo make -j36 -C $PWD M=$PWD/drivers/cxl modules_install
-# sudo make -j36 INSTALL_MOD_DIR=cxl-raw -C $PWD M=$PWD/drivers/cxl modules_install
-#[ ! -d /lib/modules/${UNAME_R}/kernel/drivers/cxl-original ] && sudo cp -r /lib/modules/${UNAME_R}/kernel/drivers/cxl /lib/modules/${UNAME_R}/kernel/drivers/cxl-original
-#[ -d /lib/modules/${UNAME_R}/kernel/drivers/cxl-raw ] && sudo rm -rf /lib/modules/${UNAME_R}/kernel/drivers/cxl-raw
-#sudo cp -rf $PWD/drivers/cxl /lib/modules/${UNAME_R}/kernel/drivers/cxl-raw
-#sudo rm -r /lib/modules/${UNAME_R}/kernel/drivers/cxl
-#sudo cp -rf /lib/modules/${UNAME_R}/kernel/drivers/cxl-raw /lib/modules/${UNAME_R}/kernel/drivers/cxl
-
 # https://docs.kernel.org/kbuild/modules.html#symbols-from-the-kernel-vmlinux-modules
 # During a kernel build, a file named Module.symvers will be
 # generated. Module.symvers contains all exported symbols from the kernel
 # and compiled modules. For each symbol, the corresponding CRC value is
 # also stored.
+#
+#   MODPOST /home/rcpao/Documents/job/sgh/gitlab-ub/ubuntu-kernel/linux-hwe-6.5-6.5.0/drivers/cxl/Module.symvers
+# WARNING: Module.symvers is missing.
+#          Modules may not have dependencies or modversions.
+#          You may get many unresolved symbol errors.
+#          You can set KBUILD_MODPOST_WARN=1 to turn errors into warning
+#          if you want to proceed at your own risk.
+#
+cp /usr/src/linux-headers-${UNAME_R}/Module.symvers .
 
+
+# fakeroot debian/rules clean
+
+
+# make && make modules_install && make install
+# 
+# make -j clean
+# make modules_prepare
+# make -j 
+# make -j modules
+# sudo make modules_install
+# sudo make install
+#
+# make -j clean
+make modules_prepare
+make -j -C $PWD M=$PWD/drivers/cxl clean
+make -j -C $PWD M=$PWD/drivers/cxl modules
+
+
+# Copy newly built cxl kernel modules to ./cxl-raw-$UNAME_R/
+
+SRCDIR=./drivers/cxl
+DSTDIR1=./drivers/cxl-raw-$UNAME_R 
+
+[ -d $DSTDIR1 ] && rm -rf $DSTDIR1 # signed .ko files are owned by root
+[ ! -d $DSTDIR1/core ] && mkdir -p $DSTDIR1/core
+
+for KOSPEC in \
+  core/cxl_core.ko \
+  cxl_acpi.ko \
+  cxl_mem.ko \
+  cxl_pci.ko \
+  cxl_pmem.ko \
+  cxl_port.ko \
+; do
+  cp $SRCDIR/$KOSPEC $DSTDIR1/$KOSPEC
+  # Sign new cxl modules for UEFI Secure Boot with machine owner keys (MOK) 
+  [ -f /var/lib/shim-signed/mok/MOK.priv ] && [ -f /var/lib/shim-signed/mok/MOK.der ] && sudo /usr/src/linux-headers-$UNAME_R/scripts/sign-file sha256 /var/lib/shim-signed/mok/MOK.priv /var/lib/shim-signed/mok/MOK.der $DSTDIR1/$KOSPEC
+done
+
+
+# Copy newly built cxl kernel modules to $DSTDIR2/cxl-raw-$UNAME_R/
+
+DSTDIR2=/usr/lib/modules/$UNAME_R/kernel/drivers
+
+if [ ! -d  $DSTDIR2/cxl-raw-$UNAME_R ]; then
+  sudo cp -r $DSTDIR1 $DSTDIR2/
+else
+  sudo cp -r $DSTDIR1/* $DSTDIR2/cxl-raw-$UNAME_R/
+fi
+
+# ls -lR $DSTDIR2/cxl*
+
+
+SCRIPTSPEC=../cxl-raw.sh
+# Enable CONFIG_CXL_MEM_RAW_COMMANDS=y modules
+cat <<EOF > $SCRIPTSPEC
+#!/bin/bash -x
+[ -L $DSTDIR2/cxl ] && sudo rm $DSTDIR2/cxl 
+[ -d $DSTDIR2/cxl ] && sudo mv $DSTDIR2/cxl $DSTDIR2/cxl-original
+[ -d $DSTDIR2/cxl-raw-$UNAME_R ] && sudo ln -s $DSTDIR2/cxl-raw-$UNAME_R $DSTDIR2/cxl
+EOF
+chmod +x $SCRIPTSPEC
+sudo cp $SCRIPTSPEC $DSTDIR2/
+
+SCRIPTSPEC=../cxl-original.sh
+# Restore original cxl modules
+cat <<EOF > $SCRIPTSPEC
+#!/bin/bash -x
+[ -L $DSTDIR2/cxl ] && sudo rm $DSTDIR2/cxl 
+[ ! -d $DSTDIR2/cxl ] && [ -d $DSTDIR2/cxl-original ] && sudo ln -s $DSTDIR2/cxl-original $DSTDIR2/cxl
+EOF
+chmod +x $SCRIPTSPEC
+sudo cp $SCRIPTSPEC $DSTDIR2/
+
+# ls -lR $DSTDIR2/cxl*
+
+
+SCRIPTSPEC=../cxl-lsmod.sh
+# list cxl modules
+cat <<EOF > $SCRIPTSPEC
+lsmod | grep cxl
+EOF
+chmod +x $SCRIPTSPEC
+sudo cp $SCRIPTSPEC $DSTDIR2/
+
+SCRIPTSPEC=../cxl-insmod.sh
+# install cxl modules
+cat <<EOF > $SCRIPTSPEC
+sudo insmod cxl/core/cxl_core.ko # must be first
+sudo insmod cxl/cxl_acpi.ko
+sudo insmod cxl/cxl_mem.ko
+sudo insmod cxl/cxl_pci.ko
+sudo insmod cxl/cxl_pmem.ko
+sudo insmod cxl/cxl_port.ko
+EOF
+chmod +x $SCRIPTSPEC
+sudo cp $SCRIPTSPEC $DSTDIR2/
+
+SCRIPTSPEC=../cxl-rmmod.sh
+# remove cxl modules
+cat <<EOF > $SCRIPTSPEC
+sudo rmmod cxl/cxl_acpi.ko
+sudo rmmod cxl/cxl_mem.ko
+sudo rmmod cxl/cxl_pci.ko
+sudo rmmod cxl/cxl_pmem.ko
+sudo rmmod cxl/cxl_port.ko
+sudo rmmod cxl/core/cxl_core.ko # must be last
+EOF
+chmod +x $SCRIPTSPEC
+sudo cp $SCRIPTSPEC $DSTDIR2/
+
+ls -lR $DSTDIR2/cxl*
