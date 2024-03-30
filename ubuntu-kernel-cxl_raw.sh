@@ -11,6 +11,8 @@ UNAME_R=$(uname -r)
 
 
 # Enable apt deb-src repositories to get kernel sources
+#
+# One-Line-Style Format
 source /etc/os-release
 # VERSION_CODENAME=jammy
 echo Uncomment the following lines from /etc/apt/sources.list
@@ -20,30 +22,45 @@ echo deb-src http://archive.ubuntu.com/ubuntu ${VERSION_CODENAME}-updates main
 sed 's|\# deb-src http:\/\/us\.archive\.ubuntu\.com\/ubuntu\/ '"${VERSION_CODENAME}"' main restricted$|deb-src http:\/\/us\.archive\.ubuntu\.com\/ubuntu\/ '"${VERSION_CODENAME}"' main restricted|' /etc/apt/sources.list > /tmp/sources.list.1.$$
 # deb-src http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-updates main restricted
 sed 's|\# deb-src http:\/\/us\.archive\.ubuntu\.com\/ubuntu\/ '"${VERSION_CODENAME}"'-updates main restricted$|deb-src http:\/\/us\.archive\.ubuntu\.com\/ubuntu\/ '"${VERSION_CODENAME}"'-updates main restricted|' /tmp/sources.list.1.$$ > /tmp/sources.list.2.$$
-[ ! -f /etc/apt/sources.list.original ] && sudo mv -f /etc/apt/sources.list /etc/apt/sources.list.original
+[ ! -f /etc/apt/sources.list_before-$(basename $0) ] && sudo cp /etc/apt/sources.list /etc/apt/sources.list_before-$(basename $0)
 sudo cp -f /tmp/sources.list.2.$$ /etc/apt/sources.list
 # rm /tmp/sources.list.[12].$$ 
+#
+# DEB822-Style Format in Ubuntu 24.04 daily 2024-03-23 06:41
+echo Replace "Types: deb" with "Types: deb deb-src"
+sed 's|Types: deb$|Types: deb deb-src|' /etc/apt/sources.list.d/ubuntu.sources > /tmp/ubuntu.sources.1.$$
+[ ! -f /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0) ] && sudo cp -f /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0)
+sudo cp -f /tmp/ubuntu.sources.1.$$ /etc/apt/sources.list.d/ubuntu.sources
 
 sudo apt-get -y update
 sudo apt-get -y build-dep linux linux-image-unsigned-${UNAME_R}
 sudo apt-get -y install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
 
 
-# /boot/config-6.5.0-21-generic
-# CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0"
-sudo apt-get -y install gcc-12
-gcc --version
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
+# Ubuntu 22.04.4: /boot/config-6.5.0-21-generic; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0"
+# Ubuntu 24.04 daily; /boot/config-6.8.0-11-generic; Linux/x86 6.8.0-rc4 Kernel Configuration; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-13ubuntu1) 13.2.0"
+GCCVERSTR=$(grep -Eo 'gcc-[0-9]+' /boot/config-$UNAME_R) # gcc-12
+GCCVERNUM=${GCCVERSTR#gcc-} # 12
+sudo apt-get -y install $GCCVER
+$GCCVERSTR --version
+# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
+# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
+# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/$GCCVERSTR $GCCVERNUM
 yes "" | sudo update-alternatives --config gcc
 gcc --version
-# gcc (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+# 22.04.4: gcc (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+# 24.04 daily: gcc (Ubuntu 12.3.0-15ubuntu1) 12.3.0
+# 24.04 daily: gcc-13 (Ubuntu 13.2.0-21ubuntu1) 13.2.0
 
 
 uname -r
 apt source linux-image-unsigned-${UNAME_R}
 
-cd linux-hwe-6.5-6.5.0
+# cd linux-hwe-6.5-6.5.0
+# cd linux-6.8.0
+ls -ld linux-*
+cd linux-*
 
 
 # chmod a+x debian/rules
@@ -52,7 +69,8 @@ cd linux-hwe-6.5-6.5.0
 
 
 cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment to 6.5.13?
-# make olddefconfig 
+# yes "" | make oldconfig # https://serverfault.com/a/116317/221343
+make olddefconfig # https://serverfault.com/a/538150/221343
 # make menuconfig # This is the text based menu config 
 # make xconfig # This is the GUI based menu config 
 #
@@ -62,6 +80,8 @@ cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version com
 #
 sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
 mv .config.cxl_raw_y .config 
+#
+diff /boot/config-${UNAME_R} .config
 grep CONFIG_CXL_MEM_RAW_COMMANDS .config
 # CONFIG_CXL_MEM_RAW_COMMANDS=y
 
@@ -109,6 +129,23 @@ DSTDIR1=./drivers/cxl-raw-$UNAME_R
 
 [ -d $DSTDIR1 ] && rm -rf $DSTDIR1 # signed .ko files are owned by root
 [ ! -d $DSTDIR1/core ] && mkdir -p $DSTDIR1/core
+
+if [[ ( ! -f /var/lib/shim-signed/mok/MOK.priv ) && ( ! -f /var/lib/shim-signed/mok/MOK.der ) ]]; then
+  mokutil --sb-state
+  echo "Creating new UEFI Secure Boot machine owner keys (MOK)"
+  # pushd /var/lib/shim-signed/mok/
+    sudo openssl req -new -x509 \
+    -newkey rsa:2048 -keyout /var/lib/shim-signed/mok/MOK.priv \
+    -outform DER -out /var/lib/shim-signed/mok/MOK.der \
+    -nodes -days 36500 -subj "/CN=$(hostname --fqdn) Driver Kmod Signing MOK"
+    echo "When prompted, enter a one-time password to import your new MOK.der"
+    echo "at the next reboot into the blue Shim UEFI key MOK Management menu:"
+    echo "Enroll MOK > Continue > Yes > "
+    echo "Enter the one-time password you just entered > Reboot"
+    # Screenshots: http://docs.blueworx.com/BVR/InfoCenter/V7/Linux/help/topic/com.ibm.wvrlnx.config.doc/lnx_installation_secure_boot.html
+    sudo mokutil --import /var/lib/shim-signed/mok/MOK.der
+  # popd
+fi
 
 for KOSPEC in \
   core/cxl_core.ko \
@@ -169,15 +206,16 @@ EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
 
+# Ubuntu 24.04 daily ships with *.ko.zstd Zstd compressed kernel modules
 SCRIPTSPEC=../cxl-insmod.sh
 # install cxl modules
 cat <<EOF > $SCRIPTSPEC
-sudo insmod cxl/core/cxl_core.ko # must be first
-sudo insmod cxl/cxl_acpi.ko
-sudo insmod cxl/cxl_mem.ko
-sudo insmod cxl/cxl_pci.ko
-sudo insmod cxl/cxl_pmem.ko
-sudo insmod cxl/cxl_port.ko
+sudo insmod $DSTDIR2/cxl/core/cxl_core.ko* # must be first
+sudo insmod $DSTDIR2/cxl/cxl_acpi.ko*
+sudo insmod $DSTDIR2/cxl/cxl_mem.ko*
+sudo insmod $DSTDIR2/cxl/cxl_pci.ko*
+sudo insmod $DSTDIR2/cxl/cxl_pmem.ko*
+sudo insmod $DSTDIR2/cxl/cxl_port.ko*
 EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
@@ -185,12 +223,12 @@ sudo cp $SCRIPTSPEC $DSTDIR2/
 SCRIPTSPEC=../cxl-rmmod.sh
 # remove cxl modules
 cat <<EOF > $SCRIPTSPEC
-sudo rmmod cxl/cxl_acpi.ko
-sudo rmmod cxl/cxl_mem.ko
-sudo rmmod cxl/cxl_pci.ko
-sudo rmmod cxl/cxl_pmem.ko
-sudo rmmod cxl/cxl_port.ko
-sudo rmmod cxl/core/cxl_core.ko # must be last
+sudo rmmod $DSTDIR2/cxl/cxl_acpi.ko*
+sudo rmmod $DSTDIR2/cxl/cxl_mem.ko*
+sudo rmmod $DSTDIR2/cxl/cxl_pci.ko*
+sudo rmmod $DSTDIR2/cxl/cxl_pmem.ko*
+sudo rmmod $DSTDIR2/cxl/cxl_port.ko*
+sudo rmmod $DSTDIR2/cxl/core/cxl_core.ko* # must be last
 EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
