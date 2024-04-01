@@ -57,7 +57,8 @@ gcc --version
 
 
 uname -r
-apt source linux-image-unsigned-${UNAME_R}
+# apt source linux-image-unsigned-${UNAME_R}
+git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
 
 # cd linux-hwe-6.5-6.5.0
 # cd linux-6.8.0
