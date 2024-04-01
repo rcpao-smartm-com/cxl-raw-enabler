@@ -25,12 +25,14 @@ sed 's|\# deb-src http:\/\/us\.archive\.ubuntu\.com\/ubuntu\/ '"${VERSION_CODENA
 [ ! -f /etc/apt/sources.list_before-$(basename $0) ] && sudo cp /etc/apt/sources.list /etc/apt/sources.list_before-$(basename $0)
 sudo cp -f /tmp/sources.list.2.$$ /etc/apt/sources.list
 # rm /tmp/sources.list.[12].$$ 
-#
+
 # DEB822-Style Format in Ubuntu 24.04 daily 2024-03-23 06:41
-echo Replace "Types: deb" with "Types: deb deb-src"
-sed 's|Types: deb$|Types: deb deb-src|' /etc/apt/sources.list.d/ubuntu.sources > /tmp/ubuntu.sources.1.$$
-[ ! -f /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0) ] && sudo cp -f /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0)
-sudo cp -f /tmp/ubuntu.sources.1.$$ /etc/apt/sources.list.d/ubuntu.sources
+if [ /etc/apt/sources.list.d/ubuntu.sources ]; then
+  [ ! -f /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0) ] && sudo cp -f /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0) # make a backup
+  echo Replace "Types: deb" with "Types: deb deb-src"
+  sed 's|Types: deb$|Types: deb deb-src|' /etc/apt/sources.list.d/ubuntu.sources > /tmp/ubuntu.sources.1.$$
+  sudo cp -f /tmp/ubuntu.sources.1.$$ /etc/apt/sources.list.d/ubuntu.sources
+fi
 
 sudo apt-get -y update
 sudo apt-get -y build-dep linux linux-image-unsigned-${UNAME_R}
