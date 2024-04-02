@@ -57,15 +57,24 @@ gcc --version
 
 
 uname -r
-# apt source linux-image-unsigned-${UNAME_R}
-git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
+apt source linux-image-unsigned-${UNAME_R}
+RETVAL=100 # ToDo DBG $? 
+if [ ${RETVAL} -eq 0 ]; then
+  # cd linux-hwe-6.5-6.5.0
+  # cd linux-6.8.0
+  ls -ld linux-*
+  cd linux-*
+else
+  git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
+  ls -ld ${VERSION_CODENAME}
+  cd ${VERSION_CODENAME}
+  KVERS=${UNAME_R%-generic} # remove "-generic"
+  GITTAG=$(git tag -l Ubuntu-${KVERS}.*)
+  git checkout -b ${GITTAG}-cxl-raw ${GITTAG}
+fi
 
-# cd linux-hwe-6.5-6.5.0
-# cd linux-6.8.0
-ls -ld linux-*
-cd linux-*
 
-
+# ls -RF debian
 # chmod a+x debian/rules
 # chmod a+x debian/scripts/*
 # chmod a+x debian/scripts/misc/*
@@ -105,6 +114,13 @@ grep CONFIG_CXL_MEM_RAW_COMMANDS .config
 #          if you want to proceed at your own risk.
 #
 cp /usr/src/linux-headers-${UNAME_R}/Module.symvers .
+
+
+# Fix: Skipping BTF generation for .../drivers/cxl/cxl_acpi.ko due to unavailability of vmlinux
+#
+# https://askubuntu.com/a/1439053
+#sudo apt-get -y install dwarves
+sudo ln -sf /sys/kernel/btf/vmlinux .
 
 
 # fakeroot debian/rules clean
