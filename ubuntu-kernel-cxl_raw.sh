@@ -37,6 +37,8 @@ fi
 sudo apt-get -y update
 sudo apt-get -y build-dep linux linux-image-unsigned-${UNAME_R}
 sudo apt-get -y install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
+sudo apt-get -y install zstd
+sudo apt-get -y install rustc
 
 
 # Ubuntu 22.04.4: /boot/config-6.5.0-21-generic; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0"
@@ -57,14 +59,15 @@ gcc --version
 
 
 uname -r
-apt source linux-image-unsigned-${UNAME_R}
-RETVAL=$? # DBG: non-zero will use git clone
+#apt source linux-image-unsigned-${UNAME_R}
+RETVAL=100 # $? # DBG: non-zero will use git clone
 if [ ${RETVAL} -eq 0 ]; then
   # cd linux-hwe-6.5-6.5.0
   # cd linux-6.8.0
   ls -ld linux-*
   cd linux-*
 else
+  # https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide
   git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
   ls -ld ${VERSION_CODENAME}
   cd ${VERSION_CODENAME}
@@ -82,7 +85,7 @@ fi
 
 cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment to 6.5.13?
 # yes "" | make oldconfig # https://serverfault.com/a/116317/221343
-make olddefconfig # https://serverfault.com/a/538150/221343
+#make olddefconfig # https://serverfault.com/a/538150/221343
 # make menuconfig # This is the text based menu config 
 # make xconfig # This is the GUI based menu config 
 #
@@ -177,6 +180,7 @@ for KOSPEC in \
   cp $SRCDIR/$KOSPEC $DSTDIR1/$KOSPEC
   # Sign new cxl modules for UEFI Secure Boot with machine owner keys (MOK) 
   [ -f /var/lib/shim-signed/mok/MOK.priv ] && [ -f /var/lib/shim-signed/mok/MOK.der ] && sudo /usr/src/linux-headers-$UNAME_R/scripts/sign-file sha256 /var/lib/shim-signed/mok/MOK.priv /var/lib/shim-signed/mok/MOK.der $DSTDIR1/$KOSPEC
+  zstd $DSTDIR1/$KOSPEC
 done
 
 
@@ -225,16 +229,21 @@ EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
 
+# Use compressed .ko.zst if original is compressed
+DOTZSTEXT=""
+[ -d $DSTDIR2/cxl ] && [ -f $DSTDIR2/cxl/core/cxl_core.ko.zst ] && DOTZSTEXT=.zst
+[ -f $DSTDIR2/cxl/core/cxl_core.ko.zst ] && DOTZSTEXT=.zst
 # Ubuntu 24.04 daily ships with *.ko.zstd Zstd compressed kernel modules
 SCRIPTSPEC=../cxl-insmod.sh
 # install cxl modules
 cat <<EOF > $SCRIPTSPEC
-sudo insmod $DSTDIR2/cxl/core/cxl_core.ko* # must be first
-sudo insmod $DSTDIR2/cxl/cxl_acpi.ko*
-sudo insmod $DSTDIR2/cxl/cxl_mem.ko*
-sudo insmod $DSTDIR2/cxl/cxl_pci.ko*
-sudo insmod $DSTDIR2/cxl/cxl_pmem.ko*
-sudo insmod $DSTDIR2/cxl/cxl_port.ko*
+DOTZSTEXT=$DOTZSTEXT
+sudo insmod $DSTDIR2/cxl/core/cxl_core.ko\$DOTZSTEXT # cxl_core must be first
+sudo insmod $DSTDIR2/cxl/cxl_acpi.ko\$DOTZSTEXT
+sudo insmod $DSTDIR2/cxl/cxl_mem.ko\$DOTZSTEXT
+sudo insmod $DSTDIR2/cxl/cxl_pci.ko\$DOTZSTEXT
+sudo insmod $DSTDIR2/cxl/cxl_pmem.ko\$DOTZSTEXT
+sudo insmod $DSTDIR2/cxl/cxl_port.ko\$DOTZSTEXT
 EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
@@ -242,12 +251,12 @@ sudo cp $SCRIPTSPEC $DSTDIR2/
 SCRIPTSPEC=../cxl-rmmod.sh
 # remove cxl modules
 cat <<EOF > $SCRIPTSPEC
-sudo rmmod $DSTDIR2/cxl/cxl_acpi.ko*
-sudo rmmod $DSTDIR2/cxl/cxl_mem.ko*
-sudo rmmod $DSTDIR2/cxl/cxl_pci.ko*
-sudo rmmod $DSTDIR2/cxl/cxl_pmem.ko*
-sudo rmmod $DSTDIR2/cxl/cxl_port.ko*
-sudo rmmod $DSTDIR2/cxl/core/cxl_core.ko* # must be last
+sudo rmmod cxl_acpi
+sudo rmmod cxl_mem
+sudo rmmod cxl_pci
+sudo rmmod cxl_pmem
+sudo rmmod cxl_port
+sudo rmmod cxl_core # cxl_core must be last
 EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
