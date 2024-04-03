@@ -45,7 +45,7 @@ sudo apt-get -y install rustc
 # Ubuntu 24.04 daily; /boot/config-6.8.0-11-generic; Linux/x86 6.8.0-rc4 Kernel Configuration; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-13ubuntu1) 13.2.0"
 GCCVERSTR=$(grep -Eo 'gcc-[0-9]+' /boot/config-$UNAME_R) # gcc-12
 GCCVERNUM=${GCCVERSTR#gcc-} # 12
-sudo apt-get -y install $GCCVER
+sudo apt-get -y install $GCCVERSTR
 $GCCVERSTR --version
 # sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
 # sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
