@@ -1,8 +1,8 @@
-# ubuntu-kernel
+# cxl-raw-enabler
 
-http://gitlab-ub.memapd.internal/sgh/ubuntu-kernel
+http://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler
 
-This bash script, ubuntu-kernel-cxl_raw.sh, gets the source code for 
+This bash script, cxl-raw-ubuntu.sh, gets the source code for 
 the currently running kernel, enables CONFIG_CXL_MEM_RAW_COMMANDS=y, 
 and creates bash scripts in 
 `/usr/lib/modules/$UNAME_R/kernel/drivers/`:
@@ -16,14 +16,14 @@ and creates bash scripts in
 Ubuntu 22.04.4 LTS base installs kernel 6.5.0-18.
 As of 2023-03-29, the latest kernel is 6.5.0-26.
 
-Copy ubuntu-kernel-cxl_raw.sh somewhere under your home directory 
+Copy cxl-raw-ubuntu.sh somewhere under your home directory 
 such as ~/Documents/.
 Your user account must be able to sudo.
 
 ```
 $ cd ~/Documents/
-$ chmod +x ubuntu-kernel-cxl_raw.sh
-$ ./ubuntu-kernel-cxl_raw.sh
+$ chmod +x cxl-raw-ubuntu.sh
+$ ./cxl-raw-ubuntu.sh
 [sudo] password for user1:
 ...
 $ cd /usr/lib/modules/$UNAME_R/kernel/drivers/
