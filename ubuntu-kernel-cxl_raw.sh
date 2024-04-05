@@ -59,8 +59,8 @@ gcc --version
 
 
 uname -r
-#apt source linux-image-unsigned-${UNAME_R}
-RETVAL=100 # $? # DBG: non-zero will use git clone
+apt source linux-image-unsigned-${UNAME_R}
+RETVAL=$? # DBG: non-zero will use git clone
 if [ ${RETVAL} -eq 0 ]; then
   # cd linux-hwe-6.5-6.5.0
   # cd linux-6.8.0
