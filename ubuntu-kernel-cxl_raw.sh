@@ -27,7 +27,7 @@ sudo cp -f /tmp/sources.list.2.$$ /etc/apt/sources.list
 # rm /tmp/sources.list.[12].$$ 
 
 # DEB822-Style Format in Ubuntu 24.04 daily 2024-03-23 06:41
-if [ /etc/apt/sources.list.d/ubuntu.sources ]; then
+if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
   [ ! -f /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0) ] && sudo cp -f /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0) # make a backup
   echo Replace "Types: deb" with "Types: deb deb-src"
   sed 's|Types: deb$|Types: deb deb-src|' /etc/apt/sources.list.d/ubuntu.sources > /tmp/ubuntu.sources.1.$$
@@ -64,8 +64,8 @@ RETVAL=100 # $? # DBG: non-zero will use git clone
 if [ ${RETVAL} -eq 0 ]; then
   # cd linux-hwe-6.5-6.5.0
   # cd linux-6.8.0
-  ls -ld linux-*
-  cd linux-*
+  LS_D_LINUX=$(ls -d linux-*/)
+  cd ${LS_D_LINUX}
 else
   # https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide
   git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
@@ -85,7 +85,7 @@ fi
 
 cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment to 6.5.13?
 # yes "" | make oldconfig # https://serverfault.com/a/116317/221343
-#make olddefconfig # https://serverfault.com/a/538150/221343
+make olddefconfig # https://serverfault.com/a/538150/221343
 # make menuconfig # This is the text based menu config 
 # make xconfig # This is the GUI based menu config 
 #
