@@ -237,6 +237,7 @@ DOTZSTEXT=""
 SCRIPTSPEC=../cxl-insmod.sh
 # install cxl modules
 cat <<EOF > $SCRIPTSPEC
+# DOTZSTEXT=.zst
 DOTZSTEXT=$DOTZSTEXT
 sudo insmod $DSTDIR2/cxl/core/cxl_core.ko\$DOTZSTEXT # cxl_core must be first
 sudo insmod $DSTDIR2/cxl/cxl_acpi.ko\$DOTZSTEXT
