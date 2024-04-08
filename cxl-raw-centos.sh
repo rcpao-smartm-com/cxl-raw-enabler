@@ -25,6 +25,17 @@ source /etc/os-release
 # REDHAT_SUPPORT_PRODUCT_VERSION="CentOS Stream"
 
 
+#==> /boot/config-5.14.0-432.el9.x86_64 <==
+# Linux/x86_64 5.14.0-432.el9.x86_64 Kernel Configuration
+#CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20231218 (Red Hat 11.4.1-3)"
+#==> /boot/config-6.8.4-1.el9.elrepo.x86_64 <==
+# Linux/x86_64 6.8.4-1.el9.elrepo.x86_64 Kernel Configuration
+#CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
+#gcc --version
+#gcc (GCC) 11.4.1 20231218 (Red Hat 11.4.1-3)
+gcc --version
+
+
 # https://wiki.crowncloud.net/?How_to_install_or_upgrade_to_Kernel_6_x_on_CentOS_Stream_9
 
 sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
@@ -48,13 +59,30 @@ sudo dnf -y install asciidoc audit-libs-devel bash bc binutils binutils-devel bi
 sudo dnf -y install elfutils-devel elfutils-libelf-devel findutils flex gawk gcc gettext gzip hmaccalc hostname java-devel
 sudo dnf -y install m4 make module-init-tools ncurses-devel net-tools newt-devel numactl-devel openssl
 sudo dnf -y install patch pciutils-devel perl perl-ExtUtils-Embed pesign python-devel python-docutils redhat-rpm-config
+# Error: Unable to find a match: python-docutils
+sudo dnf -y install patch pciutils-devel perl perl-ExtUtils-Embed pesign python-devel redhat-rpm-config
 sudo dnf -y install rpm-build sh-utils tar xmlto xz zlib-devel
+# Error: Unable to find a match: sh-utils
+sudo dnf -y install rpm-build tar xmlto xz zlib-devel
 
 # warning: user mockbuild does not exist - using root
 # warning: group mock does not exist - using root
 # https://unix.stackexchange.com/a/558757
+#sudo dnf -y install mock
+# Error: Unable to find a match: mock
+#sudo dnf -y install mock-centos-sig-configs
+#
+# https://copr.fedorainfracloud.org/coprs/g/mock/mock-stable/repo/epel-9/group_mock-mock-stable-epel-9.repo
+# sudo dnf copr enable @mock/mock-stable
+# sudo dnf install mock
+#   - nothing provides python3-backoff needed by mock-5.5-1.el9.noarch from copr:copr.fedorainfracloud.org:group_mock:mock-stable
+#   - nothing provides python3-pyroute2 needed by mock-5.5-1.el9.noarch from copr:copr.fedorainfracloud.org:group_mock:mock-stable
+#   - nothing provides python3-templated-dictionary needed by mock-5.5-1.el9.noarch from copr:copr.fedorainfracloud.org:group_mock:mock-stable
+#
+# https://rpm-software-management.github.io/mock/
+#
+sudo groupadd mock
 sudo usermod -a -G mock $(whoami) # or ${USER}
-sudo dnf -y install mock
 sudo useradd mockbuild
 sudo usermod -G mock mockbuild
 
@@ -63,37 +91,20 @@ rpm -i https://cbs.centos.org/kojifiles/packages/kernel/${UNAME_R_NO_DASH}/1.el9
 
 # mock rebuild -r epel-6-x86_64 /home/mockbuild/kernel 2.6.32-71.7.1.el6.src.rpm
 
-cd ~/rpmbuild/SPECS
-mok rpmbuild -bp --target=$(uname -m) kernel.spec
+pushd ~/rpmbuild/SPECS
+  rpmbuild -bp --target=$(uname -m) kernel.spec
+popd
+ls ~/rpmbuild/BUILD/linux*/
 
-ls ~/rpmbuild/BUILD/kernel*/linux*/
+pushd ~/rpmbuild/BUILD/linux-6.8/
+  make -j
+  make -j modules
+  # sudo make -j install
+  # sudo make -j modules_install
+popd
 
 
 exit
-
-
-sudo apt-get -y update
-sudo apt-get -y build-dep linux linux-image-unsigned-${UNAME_R}
-sudo apt-get -y install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
-sudo apt-get -y install zstd
-sudo apt-get -y install rustc
-
-
-# Ubuntu 22.04.4: /boot/config-6.5.0-21-generic; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0"
-# Ubuntu 24.04 daily; /boot/config-6.8.0-11-generic; Linux/x86 6.8.0-rc4 Kernel Configuration; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-13ubuntu1) 13.2.0"
-GCCVERSTR=$(grep -Eo 'gcc-[0-9]+' /boot/config-$UNAME_R) # gcc-12
-GCCVERNUM=${GCCVERSTR#gcc-} # 12
-sudo apt-get -y install $GCCVERSTR
-$GCCVERSTR --version
-# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
-# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
-# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/$GCCVERSTR $GCCVERNUM
-yes "" | sudo update-alternatives --config gcc
-gcc --version
-# 22.04.4: gcc (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-# 24.04 daily: gcc (Ubuntu 12.3.0-15ubuntu1) 12.3.0
-# 24.04 daily: gcc-13 (Ubuntu 13.2.0-21ubuntu1) 13.2.0
 
 
 uname -r
