@@ -118,8 +118,9 @@ popd
 ls ~/rpmbuild/BUILD/linux*/
 
 pushd ~/rpmbuild/BUILD/linux-6.8/
-  make # -j: cc1 runs out of memory with 2GB to 3GB
-  make modules # -j: cc1 runs out of memory
+  # -j 4 works. -j runs out of memory with 2GB, 3GB, and 4GB memory
+  # make -j 4
+  make -j 4 modules
   # sudo make install
   # sudo make modules_install
 popd
