@@ -98,8 +98,6 @@ sudo dnf -y install rpm-build          tar xmlto xz zlib-devel
 # warning: user mockbuild does not exist - using root
 # warning: group mock does not exist - using root
 # https://unix.stackexchange.com/a/558757
-#sudo dnf -y install mock
-# Error: Unable to find a match: mock
 #sudo dnf -y install mock-centos-sig-configs
 #
 # https://copr.fedorainfracloud.org/coprs/g/mock/mock-stable/repo/epel-9/group_mock-mock-stable-epel-9.repo
@@ -117,20 +115,20 @@ sudo useradd mockbuild
 sudo usermod -G mock mockbuild
 
 # rpm -i http://vault.centos.org/7.9.2009/updates/Source/SPackages/kernel-3.10.0-1160.95.1.el7.src.rpm 2>&1 | grep -v 'exist'
-rpm -i https://cbs.centos.org/kojifiles/packages/kernel/${UNAME_R_NO_DASH}/1.el9/src/kernel-${UNAME_R_NO_DASH}-1.el9.src.rpm
-
-# mock rebuild -r epel-6-x86_64 /home/mockbuild/kernel 2.6.32-71.7.1.el6.src.rpm
+rpm -i https://cbs.centos.org/kojifiles/packages/kernel/${NEW_UNAME_R_NO_DASH}/1.el9/src/kernel-${NEW_UNAME_R_NO_DASH}-1.el9.src.rpm
 
 pushd ~/rpmbuild/SPECS
+# mock rebuild -r epel-6-x86_64 /home/mockbuild/kernel 2.6.32-71.7.1.el6.src.rpm
+# mock rpmbuild -bp --target=$(uname -m) kernel.spec
   rpmbuild -bp --target=$(uname -m) kernel.spec
 popd
 ls ~/rpmbuild/BUILD/linux*/
 
 pushd ~/rpmbuild/BUILD/linux-6.8/
-  make -j
-  make -j modules
-  # sudo make -j install
-  # sudo make -j modules_install
+  make # -j: cc1 runs out of memory with 2GB to 3GB
+  make modules # -j: cc1 runs out of memory
+  # sudo make install
+  # sudo make modules_install
 popd
 
 
