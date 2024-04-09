@@ -2,48 +2,52 @@
 
 
 # $UNAME_R is the currently running kernel or the kernel you wish to build
-# UNAME_R=5.14.0-432.el9.x86_64
+# UNAME_R=5.14.0-362.8.1.el9_3.x86_64
+# UNAME_R=5.14.0-362.24.2.el9_3.x86_64
 # UNAME_R=6.8.4-1.el9.elrepo.x86_64
 UNAME_R=$(uname -r)
 UNAME_R_NO_DASH=${UNAME_R%-*}
 
 
 source /etc/os-release
-# NAME="CentOS Stream"
-# VERSION="9"
-# ID="centos"
-# ID_LIKE="rhel fedora"
-# VERSION_ID="9"
+# NAME="AlmaLinux"
+# VERSION="9.3 (Shamrock Pampas Cat)"
+# ID="almalinux"
+# ID_LIKE="rhel centos fedora"
+# VERSION_ID="9.3"
 # PLATFORM_ID="platform:el9"
-# PRETTY_NAME="CentOS Stream 9"
-# ANSI_COLOR="0;31"
+# PRETTY_NAME="AlmaLinux 9.3 (Shamrock Pampas Cat)"
+# ANSI_COLOR="0;34"
 # LOGO="fedora-logo-icon"
-# CPE_NAME="cpe:/o:centos:centos:9"
-# HOME_URL="https://centos.org/"
-# BUG_REPORT_URL="https://bugzilla.redhat.com/"
-# REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux 9"
-# REDHAT_SUPPORT_PRODUCT_VERSION="CentOS Stream"
+# CPE_NAME="cpe:/o:almalinux:almalinux:9::baseos"
+# HOME_URL="https://almalinux.org/"
+# DOCUMENTATION_URL="https://wiki.almalinux.org/"
+# BUG_REPORT_URL="https://bugs.almalinux.org/"
+# 
+# ALMALINUX_MANTISBT_PROJECT="AlmaLinux-9"
+# ALMALINUX_MANTISBT_PROJECT_VERSION="9.3"
+# REDHAT_SUPPORT_PRODUCT="AlmaLinux"
+# REDHAT_SUPPORT_PRODUCT_VERSION="9.3"
 
 
-#==> /boot/config-5.14.0-432.el9.x86_64 <==
-# Linux/x86_64 5.14.0-432.el9.x86_64 Kernel Configuration
-#CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20231218 (Red Hat 11.4.1-3)"
-#==> /boot/config-6.8.4-1.el9.elrepo.x86_64 <==
-# Linux/x86_64 6.8.4-1.el9.elrepo.x86_64 Kernel Configuration
-#CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
+# $ grep "gcc\|Kernel\ Configuration" /boot/config-*
+# /boot/config-5.14.0-362.24.2.el9_3.x86_64:# Linux/x86_64 5.14.0-362.24.2.el9_3.x86_64 Kernel Configuration
+# /boot/config-5.14.0-362.24.2.el9_3.x86_64:CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
+# /boot/config-5.14.0-362.8.1.el9_3.x86_64:# Linux/x86_64 5.14.0-362.8.1.el9_3.x86_64 Kernel Configuration
+# /boot/config-5.14.0-362.8.1.el9_3.x86_64:CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
+# /boot/config-6.8.4-1.el9.elrepo.x86_64:# Linux/x86_64 6.8.4-1.el9.elrepo.x86_64 Kernel Configuration
+# /boot/config-6.8.4-1.el9.elrepo.x86_64:CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
 gcc --version
-# gcc (GCC) 11.4.1 20231218 (Red Hat 11.4.1-3)
+# gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)
 
 
-# https://wiki.crowncloud.net/?How_to_install_or_upgrade_to_Kernel_6_x_on_CentOS_Stream_9
+# https://wiki.crowncloud.net/?Installing_the_Linux_Kernel_6x_on_AlmaLinux_9
 # WARNING: elrepo.org kernel-ml is unsigned.  Secure Boot must be disabled.
 
 sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
 sudo dnf -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
 sudo dnf -y --enablerepo=elrepo-kernel install kernel-ml
-
 # /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
-# uname -r: 6.8.4-1.el9.elrepo.x86_64
 NEW_UNAME_R=$(sudo grubby --default-kernel)
 NEW_UNAME_R_NO_DASH_1=${NEW_UNAME_R#/boot/vmlinuz-}
 NEW_UNAME_R_NO_DASH=${NEW_UNAME_R_NO_DASH_1%-*}
@@ -72,6 +76,7 @@ fi
 
 # kernel packages: https://cbs.centos.org/koji/packageinfo?packageID=455
 # https://cbs.centos.org/kojifiles/packages/kernel/6.8.2/1.el9/src/kernel-6.8.2-1.el9.src.rpm
+# https://cbs.centos.org/kojifiles/packages/kernel/6.8.4/1.el9/src/kernel-6.8.4-1.el9.src.rpm
 # https://cbs.centos.org/kojifiles/packages/kernel/${UNAME_R_NO_DASH}/1.el9/src/kernel-${UNAME_R_NO_DASH}-1.el9.src.rpm
 # https://cbs.centos.org/kojifiles/packages/kernel/${NEW_UNAME_R_NO_DASH}/1.el9/src/kernel-${NEW_UNAME_R_NO_DASH}-1.el9.src.rpm
 
@@ -98,47 +103,57 @@ sudo dnf -y install rpm-build          tar xmlto xz zlib-devel
 # warning: user mockbuild does not exist - using root
 # warning: group mock does not exist - using root
 # https://unix.stackexchange.com/a/558757
-#sudo dnf -y install mock
-# Error: Unable to find a match: mock
-#sudo dnf -y install mock-centos-sig-configs
-#
-# https://copr.fedorainfracloud.org/coprs/g/mock/mock-stable/repo/epel-9/group_mock-mock-stable-epel-9.repo
-# sudo dnf copr enable @mock/mock-stable
-# sudo dnf install mock
-#   - nothing provides python3-backoff needed by mock-5.5-1.el9.noarch from copr:copr.fedorainfracloud.org:group_mock:mock-stable
-#   - nothing provides python3-pyroute2 needed by mock-5.5-1.el9.noarch from copr:copr.fedorainfracloud.org:group_mock:mock-stable
-#   - nothing provides python3-templated-dictionary needed by mock-5.5-1.el9.noarch from copr:copr.fedorainfracloud.org:group_mock:mock-stable
-#
-# https://rpm-software-management.github.io/mock/
-#
-sudo groupadd mock
-sudo usermod -a -G mock $(whoami) # or ${USER}
-sudo useradd mockbuild
-sudo usermod -G mock mockbuild
+#sudo usermod -a -G mock $(whoami) # or ${USER}
+#sudo useradd mockbuild
+#sudo usermod -G mock mockbuild
 
 # rpm -i http://vault.centos.org/7.9.2009/updates/Source/SPackages/kernel-3.10.0-1160.95.1.el7.src.rpm 2>&1 | grep -v 'exist'
-rpm -i https://cbs.centos.org/kojifiles/packages/kernel/${UNAME_R_NO_DASH}/1.el9/src/kernel-${UNAME_R_NO_DASH}-1.el9.src.rpm
-
-# mock rebuild -r epel-6-x86_64 /home/mockbuild/kernel 2.6.32-71.7.1.el6.src.rpm
+rpm -i https://cbs.centos.org/kojifiles/packages/kernel/${NEW_UNAME_R_NO_DASH}/1.el9/src/kernel-${NEW_UNAME_R_NO_DASH}-1.el9.src.rpm
 
 pushd ~/rpmbuild/SPECS
+# mock rebuild -r epel-6-x86_64 /home/mockbuild/kernel 2.6.32-71.7.1.el6.src.rpm
+# mock rpmbuild -bp --target=$(uname -m) kernel.spec
   rpmbuild -bp --target=$(uname -m) kernel.spec
 popd
 ls ~/rpmbuild/BUILD/linux*/
 
 pushd ~/rpmbuild/BUILD/linux-6.8/
-  make -j
-  make -j modules
-  # sudo make -j install
-  # sudo make -j modules_install
+  make # -j: cc1 runs out of memory with 2GB to 3GB
+  make modules # -j: cc1 runs out of memory
+  # sudo make install
+  # sudo make modules_install
 popd
 
 
 exit
 
 
+sudo apt-get -y update
+sudo apt-get -y build-dep linux linux-image-unsigned-${NEW_UNAME_R}
+sudo apt-get -y install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
+sudo apt-get -y install zstd
+sudo apt-get -y install rustc
+
+
+# Ubuntu 22.04.4: /boot/config-6.5.0-21-generic; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0"
+# Ubuntu 24.04 daily; /boot/config-6.8.0-11-generic; Linux/x86 6.8.0-rc4 Kernel Configuration; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-13ubuntu1) 13.2.0"
+GCCVERSTR=$(grep -Eo 'gcc-[0-9]+' /boot/config-$NEW_UNAME_R) # gcc-12
+GCCVERNUM=${GCCVERSTR#gcc-} # 12
+sudo apt-get -y install $GCCVERSTR
+$GCCVERSTR --version
+# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
+# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
+# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/$GCCVERSTR $GCCVERNUM
+yes "" | sudo update-alternatives --config gcc
+gcc --version
+# 22.04.4: gcc (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
+# 24.04 daily: gcc (Ubuntu 12.3.0-15ubuntu1) 12.3.0
+# 24.04 daily: gcc-13 (Ubuntu 13.2.0-21ubuntu1) 13.2.0
+
+
 uname -r
-apt source linux-image-unsigned-${UNAME_R}
+apt source linux-image-unsigned-${NEW_UNAME_R}
 RETVAL=$? # DBG: non-zero will use git clone
 if [ ${RETVAL} -eq 0 ]; then
   # cd linux-hwe-6.5-6.5.0
@@ -150,7 +165,7 @@ else
   git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
   ls -ld ${VERSION_CODENAME}
   cd ${VERSION_CODENAME}
-  KVERS=${UNAME_R%-generic} # remove "-generic"
+  KVERS=${NEW_UNAME_R%-generic} # remove "-generic"
   GITTAG=$(git tag -l Ubuntu-${KVERS}.*)
   git checkout -b ${GITTAG}-cxl-raw ${GITTAG}
 fi
