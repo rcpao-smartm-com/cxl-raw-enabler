@@ -70,8 +70,10 @@ if [ ${RETVAL} -eq 0 ]; then
   # cd xxx # fail test
   # RETVAL=$? # 1 if cd fails
   # [ "$(basename $PWD)"!="linux-hwe-${UNAME_R_2}-${UNAME_R_3}" ] && cd linux-${UNAME_R_3} # "linux-6.8.0"
-  [ ${RETVAL} -ne 0 ] && cd linux-${UNAME_R_3} # "linux-6.8.0"
-  RETVAL=$?
+  if [ ${RETVAL} -ne 0 ]; then
+    cd linux-${UNAME_R_3} # "linux-6.8.0"
+    RETVAL=$?
+  fi
   if [ ${RETVAL} -ne 0 ]; then
     echo "Error: Failed to cd into kernel source directory."
     exit 1
@@ -219,6 +221,7 @@ cat <<EOF > $SCRIPTSPEC
 [ -L $DSTDIR2/cxl ] && sudo rm $DSTDIR2/cxl 
 [ -d $DSTDIR2/cxl ] && sudo mv $DSTDIR2/cxl $DSTDIR2/cxl-original
 [ -d $DSTDIR2/cxl-raw-$UNAME_R ] && sudo ln -s $DSTDIR2/cxl-raw-$UNAME_R $DSTDIR2/cxl
+sudo update-initramfs -c -k ${UNAME_R} # update /boot/initrd.img-${UNAME_R} in case cxl drivers are loaded at Linux kernel boot
 EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
@@ -229,6 +232,7 @@ cat <<EOF > $SCRIPTSPEC
 #!/bin/bash -x
 [ -L $DSTDIR2/cxl ] && sudo rm $DSTDIR2/cxl 
 [ ! -d $DSTDIR2/cxl ] && [ -d $DSTDIR2/cxl-original ] && sudo ln -s $DSTDIR2/cxl-original $DSTDIR2/cxl
+sudo update-initramfs -c -k ${UNAME_R} # update /boot/initrd.img-${UNAME_R} in case cxl drivers are loaded at Linux kernel boot
 EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
@@ -286,4 +290,3 @@ $DSTDIR2/cxl-rmmod.sh # remove existing cxl driver modules
 $DSTDIR2/cxl-raw.sh # replace original cxl driver modules with raw enabled ones
 $DSTDIR2/cxl-insmod.sh # insert existing cxl driver modules
 # $DSTDIR2/cxl-lsmod.sh
-sudo update-initramfs -c -k ${UNAME_R} # update /boot/initrd.img-${UNAME_R} in case cxl drivers are loaded at Linux kernel boot
