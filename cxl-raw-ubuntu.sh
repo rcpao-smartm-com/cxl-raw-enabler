@@ -5,6 +5,9 @@
 # UNAME_R=6.5.0-21-generic
 # UNAME_R=6.5.0-26-generic
 UNAME_R=$(uname -r)
+UNAME_R_3=${UNAME_R%%-*} # "6.5.0" remove first/greedy "-##-generic"
+UNAME_R_2=${UNAME_R%.*} # "6.5" remove last ".*"
+KVERS=${UNAME_R%-generic} # "6.5.0-26" remove "-generic"
 
 
 # https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel
@@ -62,16 +65,28 @@ uname -r
 apt source linux-image-unsigned-${UNAME_R}
 RETVAL=$? # DBG: non-zero will use git clone
 if [ ${RETVAL} -eq 0 ]; then
-  # cd linux-hwe-6.5-6.5.0
-  # cd linux-6.8.0
-  LS_D_LINUX=$(ls -d linux-*/)
-  cd ${LS_D_LINUX}
+  cd linux-hwe-${UNAME_R_2}-${UNAME_R_3} # "linux-hwe-6.5-6.5.0"
+  RETVAL=$? # 0=cd success, contrary to 'man bash cd' true=success
+  # cd xxx # fail test
+  # RETVAL=$? # 1 if cd fails
+  # [ "$(basename $PWD)"!="linux-hwe-${UNAME_R_2}-${UNAME_R_3}" ] && cd linux-${UNAME_R_3} # "linux-6.8.0"
+  [ ${RETVAL} -ne 0 ] && cd linux-${UNAME_R_3} # "linux-6.8.0"
+  RETVAL=$?
+  if [ ${RETVAL} -ne 0 ]; then
+    echo "Error: Failed to cd into kernel source directory."
+    exit 1
+  fi
+  # LS_D_LINUX=$(ls -d linux-*/) 
+  # cd ${LS_D_LINUX}
+    # + cd linux-hwe-6.5-6.5.0/ linux-hwe-6.5-6.5.0-26/
+    # ./cxl-raw-ubuntu.sh: line 68: cd: too many arguments
+    # Manually created folders will confuse 'cd linux-*/'
 else
   # https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide
   git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
   ls -ld ${VERSION_CODENAME}
   cd ${VERSION_CODENAME}
-  KVERS=${UNAME_R%-generic} # remove "-generic"
+  # KVERS=${UNAME_R%-generic} # remove "-generic"
   GITTAG=$(git tag -l Ubuntu-${KVERS}.*)
   git checkout -b ${GITTAG}-cxl-raw ${GITTAG}
 fi
@@ -263,3 +278,12 @@ chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
 
 ls -lR $DSTDIR2/cxl*
+
+
+# $DSTDIR2/cxl-lsmod.sh
+$DSTDIR2/cxl-rmmod.sh # remove existing cxl driver modules
+# $DSTDIR2/cxl-lsmod.sh
+$DSTDIR2/cxl-raw.sh # replace original cxl driver modules with raw enabled ones
+$DSTDIR2/cxl-insmod.sh # insert existing cxl driver modules
+# $DSTDIR2/cxl-lsmod.sh
+sudo update-initramfs -c -k ${UNAME_R} # update /boot/initrd.img-${UNAME_R} in case cxl drivers are loaded at Linux kernel boot
