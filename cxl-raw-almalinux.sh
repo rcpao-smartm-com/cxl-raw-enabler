@@ -30,30 +30,19 @@ source /etc/os-release
 # REDHAT_SUPPORT_PRODUCT_VERSION="9.3"
 
 
-# $ grep "gcc\|Kernel\ Configuration" /boot/config-*
-# /boot/config-5.14.0-362.24.2.el9_3.x86_64:# Linux/x86_64 5.14.0-362.24.2.el9_3.x86_64 Kernel Configuration
-# /boot/config-5.14.0-362.24.2.el9_3.x86_64:CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
-# /boot/config-5.14.0-362.8.1.el9_3.x86_64:# Linux/x86_64 5.14.0-362.8.1.el9_3.x86_64 Kernel Configuration
-# /boot/config-5.14.0-362.8.1.el9_3.x86_64:CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
-# /boot/config-6.8.4-1.el9.elrepo.x86_64:# Linux/x86_64 6.8.4-1.el9.elrepo.x86_64 Kernel Configuration
-# /boot/config-6.8.4-1.el9.elrepo.x86_64:CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
-gcc --version
-# gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)
-
-
 # https://wiki.crowncloud.net/?Installing_the_Linux_Kernel_6x_on_AlmaLinux_9
 # WARNING: elrepo.org kernel-ml is unsigned.  Secure Boot must be disabled.
 
 sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
 sudo dnf -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
-sudo dnf -y --enablerepo=elrepo-kernel install kernel-ml
+sudo dnf -y --enablerepo=elrepo-kernel install kernel-ml kernel-ml-headers
 # /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
-NEW_UNAME_R=$(sudo grubby --default-kernel)
-NEW_UNAME_R_NO_DASH_1=${NEW_UNAME_R#/boot/vmlinuz-}
-NEW_UNAME_R_NO_DASH=${NEW_UNAME_R_NO_DASH_1%-*}
-if [ "$NEW_UNAME_R_NO_DASH"!="$UNAME_R" ]; then
+NEW_UNAME_R_BOOT_VMLINUZ=$(sudo grubby --default-kernel) # /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
+NEW_UNAME_R=${NEW_UNAME_R_BOOT_VMLINUZ#/boot/vmlinuz-} # 6.8.4-1.el9.elrepo.x86_64
+NEW_UNAME_R_NO_DASH=${NEW_UNAME_R%-*} # 6.8.4
+if [ "$NEW_UNAME_R"  !=  "$UNAME_R" ]; then
   # https://stackoverflow.com/a/226724
-  # echo "Reboot to the new $NEW_UNAME_R_NO_DASH kernel?"
+  # echo "Reboot to the new $NEW_UNAME_R kernel?"
   # select yn in "Yes" "No"; do
   #   case $yn in
   #     Yes ) sudo shutdown -r now; break;;
@@ -62,7 +51,7 @@ if [ "$NEW_UNAME_R_NO_DASH"!="$UNAME_R" ]; then
   # done
   #
   while true; do
-    read -p "Reboot to the new $NEW_UNAME_R_NO_DASH kernel (y/n)? " yn
+    read -p "Reboot to the new $NEW_UNAME_R kernel (y/n)? " yn
     case $yn in
       [Yy]* ) sudo shutdown -r now; break;;
       [Nn]* ) break;;
@@ -100,6 +89,36 @@ sudo dnf -y install rpm-build sh-utils tar xmlto xz zlib-devel
 # Error: Unable to find a match: sh-utils
 sudo dnf -y install rpm-build          tar xmlto xz zlib-devel
 
+
+# Rocky Linux 9, AlmaLinux 9, CentOS Stream 9
+# $ grep "gcc\|Kernel\ Configuration" /boot/config-*
+# /boot/config-5.14.0-362.24.2.el9_3.x86_64:# Linux/x86_64 5.14.0-362.24.2.el9_3.x86_64 Kernel Configuration
+# /boot/config-5.14.0-362.24.2.el9_3.x86_64:CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
+# /boot/config-5.14.0-362.8.1.el9_3.x86_64:# Linux/x86_64 5.14.0-362.8.1.el9_3.x86_64 Kernel Configuration
+# /boot/config-5.14.0-362.8.1.el9_3.x86_64:CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
+# /boot/config-6.8.4-1.el9.elrepo.x86_64:# Linux/x86_64 6.8.4-1.el9.elrepo.x86_64 Kernel Configuration
+# /boot/config-6.8.4-1.el9.elrepo.x86_64:CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
+gcc --version
+# gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)
+
+# $ grep -E 'CONFIG_CC_VERSION_TEXT=\"gcc \(GCC\) ' /boot/config-6.8.4-1.el9.elrepo.x86_64
+# CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"
+GCCVERSTR=$(grep -E 'CONFIG_CC_VERSION_TEXT' /boot/config-$NEW_UNAME_R)
+# + GCCVERSTR='CONFIG_CC_VERSION_TEXT="gcc (GCC) 11.4.1 20230605 (Red Hat 11.4.1-2)"'
+GCCVERSTRPREFIX='CONFIG_CC_VERSION_TEXT="gcc (GCC) '
+GCCVERSTR_1=${GCCVERSTR#"$GCCVERSTRPREFIX"} # "11.4.1 20230605 (Red Hat 11.4.1-2)"
+GCCVERSTRSUFFIX='\ .*'
+GCCVERNUM=${GCCVERSTR_1%%"$GCCVERSTRSUFFIX"} # "11.4.1"
+GCCVERNUM=$(echo $GCCVERSTR_1 | sed -e "s/$GCCVERSTRSUFFIX$//") # "11.4.1"
+GCCVERSTRSUFFIX='\..*'
+GCCVERMAJOR=$(echo $GCCVERNUM | sed -e "s/$GCCVERSTRSUFFIX$//") # "11"
+# GCCVERSTR=gcc-$GCCVERMAJOR 
+# sudo dnf -y install $GCCVERSTR
+# $GCCVERSTR --version
+gcc --version
+# https://developers.redhat.com/articles/2023/11/10/install-gcc-and-build-hello-world-application-rhel-9#step_3__build_a_hello_world_application
+
+
 # warning: user mockbuild does not exist - using root
 # warning: group mock does not exist - using root
 # https://unix.stackexchange.com/a/558757
@@ -118,22 +137,63 @@ popd
 ls ~/rpmbuild/BUILD/linux*/
 
 pushd ~/rpmbuild/BUILD/linux-6.8/
+  cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment to 6.5.13?
+  # yes "" | make oldconfig # https://serverfault.com/a/116317/221343
+  make olddefconfig # https://serverfault.com/a/538150/221343
+  # make menuconfig # This is the text based menu config 
+  # make xconfig # This is the GUI based menu config 
+  #
+  # Enable CONFIG_CXL_MEM_RAW_COMMANDS=y
+  # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
+  #   [*] RAW Command Interface for Memory Devices (default=[_])
+  #
+  sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
+  mv .config.cxl_raw_y .config 
+  #
+  diff /boot/config-${UNAME_R} .config
+  grep CONFIG_CXL_MEM_RAW_COMMANDS .config
+  # CONFIG_CXL_MEM_RAW_COMMANDS=y
+
+
+  # Copy /usr/src/linux-headers-${UNAME_R}/Module.symvers
+  #
+  # https://docs.kernel.org/kbuild/modules.html#symbols-from-the-kernel-vmlinux-modules
+  # During a kernel build, a file named Module.symvers will be
+  # generated. Module.symvers contains all exported symbols from the kernel
+  # and compiled modules. For each symbol, the corresponding CRC value is
+  # also stored.
+  #
+  #   MODPOST /home/rcpao/Documents/job/sgh/gitlab-ub/ubuntu-kernel/linux-hwe-6.5-6.5.0/drivers/cxl/Module.symvers
+  # WARNING: Module.symvers is missing.
+  #          Modules may not have dependencies or modversions.
+  #          You may get many unresolved symbol errors.
+  #          You can set KBUILD_MODPOST_WARN=1 to turn errors into warning
+  #          if you want to proceed at your own risk.
+  #
+  cp /usr/src/linux-headers-${UNAME_R}/Module.symvers .
+
+
+  # Fix: Skipping BTF generation for .../drivers/cxl/cxl_acpi.ko due to unavailability of vmlinux
+  #
+  # https://askubuntu.com/a/1439053
+  #sudo apt-get -y install dwarves
+  sudo ln -sf /sys/kernel/btf/vmlinux .
+
+
   # -j 4 works. -j runs out of memory with 2GB, 3GB, and 4GB memory
+
   # make -j 4
-  make -j 4 modules
+  # make -j 4 modules
   # sudo make install
   # sudo make modules_install
+
+  make modules_prepare
+  make -j 4 -C $PWD M=$PWD/drivers/cxl clean
+  make -j 4 -C $PWD M=$PWD/drivers/cxl 
 popd
 
 
 exit
-
-
-sudo apt-get -y update
-sudo apt-get -y build-dep linux linux-image-unsigned-${NEW_UNAME_R}
-sudo apt-get -y install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
-sudo apt-get -y install zstd
-sudo apt-get -y install rustc
 
 
 # Ubuntu 22.04.4: /boot/config-6.5.0-21-generic; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0"
@@ -151,31 +211,6 @@ gcc --version
 # 22.04.4: gcc (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
 # 24.04 daily: gcc (Ubuntu 12.3.0-15ubuntu1) 12.3.0
 # 24.04 daily: gcc-13 (Ubuntu 13.2.0-21ubuntu1) 13.2.0
-
-
-uname -r
-apt source linux-image-unsigned-${NEW_UNAME_R}
-RETVAL=$? # DBG: non-zero will use git clone
-if [ ${RETVAL} -eq 0 ]; then
-  # cd linux-hwe-6.5-6.5.0
-  # cd linux-6.8.0
-  LS_D_LINUX=$(ls -d linux-*/)
-  cd ${LS_D_LINUX}
-else
-  # https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide
-  git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
-  ls -ld ${VERSION_CODENAME}
-  cd ${VERSION_CODENAME}
-  KVERS=${NEW_UNAME_R%-generic} # remove "-generic"
-  GITTAG=$(git tag -l Ubuntu-${KVERS}.*)
-  git checkout -b ${GITTAG}-cxl-raw ${GITTAG}
-fi
-
-
-# ls -RF debian
-# chmod a+x debian/rules
-# chmod a+x debian/scripts/*
-# chmod a+x debian/scripts/misc/*
 
 
 cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment to 6.5.13?
