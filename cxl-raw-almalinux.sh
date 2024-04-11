@@ -35,7 +35,11 @@ source /etc/os-release
 
 sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
 sudo dnf -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
-sudo dnf -y --enablerepo=elrepo-kernel install kernel-ml kernel-ml-headers
+sudo dnf -y --enablerepo=elrepo-kernel install kernel-ml kernel-ml-devel
+# file /usr/include/asm-generic/bitsperlong.h from install of kernel-ml-headers-6.8.4-1.el9.elrepo.x86_64 conflicts with file from package kernel-headers-5.14.0-362.24.1.el9_3.0.1.x86_64
+# https://elrepo.org/wiki/doku.php?id=kernel-ml
+# There is no need to install the kernel-ml-headers package. It is only necessary if you intend to rebuild glibc and, thus, the entire operating system. If there is a need to have the kernel headers installed, you should use the current distributed kernel-headers package as that is related to the current version of glibc. When you see a message like “your kernel headers for kernel xxx cannot be found …”, you most likely need the kernel-ml-devel package, not the kernel-ml-headers package
+
 # /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
 NEW_UNAME_R_BOOT_VMLINUZ=$(sudo grubby --default-kernel) # /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
 NEW_UNAME_R=${NEW_UNAME_R_BOOT_VMLINUZ#/boot/vmlinuz-} # 6.8.4-1.el9.elrepo.x86_64
@@ -75,7 +79,7 @@ sudo dnf install -y epel-release
 sudo dnf install -y mock rpm-build
 
 # https://wiki.centos.org/HowTos(2f)I_need_the_Kernel_Source.html
-sudo dnf -y install kernel-devel
+#sudo dnf -y install kernel-devel # replaced by kernel-ml-devel above
 mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 echo '%_topdir %(echo $HOME)/rpmbuild' > ~/.rpmmacros
 
@@ -150,6 +154,8 @@ pushd ~/rpmbuild/BUILD/linux-6.8/
   sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
   mv .config.cxl_raw_y .config 
   #
+  # cp .config /home/rcpao/rpmbuild/SOURCES/kernel-x86_64.config
+  #
   diff /boot/config-${UNAME_R} .config
   grep CONFIG_CXL_MEM_RAW_COMMANDS .config
   # CONFIG_CXL_MEM_RAW_COMMANDS=y
@@ -170,7 +176,8 @@ pushd ~/rpmbuild/BUILD/linux-6.8/
   #          You can set KBUILD_MODPOST_WARN=1 to turn errors into warning
   #          if you want to proceed at your own risk.
   #
-  cp /usr/src/linux-headers-${UNAME_R}/Module.symvers .
+  # cp /usr/src/linux-headers-${UNAME_R}/Module.symvers . # Ubuntu
+  cp /usr/src/kernels/${UNAME_R}/Module.symvers . # Rocky Linux 9
 
 
   # Fix: Skipping BTF generation for .../drivers/cxl/cxl_acpi.ko due to unavailability of vmlinux
@@ -184,176 +191,138 @@ pushd ~/rpmbuild/BUILD/linux-6.8/
 
   # make -j 4
   # make -j 4 modules
+  #make -j 4 V=1 modules # V=1 verbose
   # sudo make install
   # sudo make modules_install
 
   make modules_prepare
-  make -j 4 -C $PWD M=$PWD/drivers/cxl clean
-  make -j 4 -C $PWD M=$PWD/drivers/cxl 
-popd
+  # make -j 4 -C $PWD M=$PWD/drivers/cxl clean
+  #make -j 4 -C $PWD M=$PWD/drivers/cxl 
+  make -C $PWD M=$PWD/drivers/cxl/core
+  make -C $PWD M=$PWD/drivers/cxl 
 
 
-exit
+  # Copy newly built cxl kernel modules to ./cxl-raw-$UNAME_R/
+  SRCDIR=./drivers/cxl
+  DSTDIR1=./drivers/cxl-raw-$UNAME_R 
+pwd
+ls -alR $SRCDIR
+
+  [ -d $DSTDIR1 ] && rm -rf $DSTDIR1 # signed .ko files are owned by root
+  [ ! -d $DSTDIR1/core ] && mkdir -p $DSTDIR1/core
+
+  # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/managing_monitoring_and_updating_the_kernel/signing-a-kernel-and-modules-for-secure-boot_managing-monitoring-and-updating-the-kernel
+  # 1. Secure Boot must be disabled for unsigned kernel-ml to boot
+  # 2. We only want to generate one MOK key, so checks for existing keys
+  #    are needed before creating.
+  MOKUTIL_SB_STATE_STRING=$(mokutil --sb-state)
+  MOKUTIL_SB_STATE_ENABLED=0
+  [ "$MOKUTIL_SB_STATE_STRING" == "SecureBoot enabled" ] && MOKUTIL_SB_STATE_ENABLED=1
+  if [[ ($MOKUTIL_SB_STATE_ENABLED -ne 0) && ( -d /etc/pki/pesign ) ]]; then
+    echo "Creating new UEFI Secure Boot machine owner keys (MOK)"
+    # pushd /etc/pki/pesign # root only
+      sudo dnf -y install pesign openssl kernel-devel mokutil keyutils
+      mokutil --sb-state
+      sudo ls -l /etc/pki/pesign
+      # sudo keyctl list %:.builtin_trusted_keys
+      sudo keyctl list %:.platform
+      # sudo keyctl list %:.blacklist
+      # Create an X.509 public and private key pair to sign custom kernel modules
+      sudo efikeygen --dbdir /etc/pki/pesign \
+	--self-sign \
+	--module \
+	--common-name 'CN=Organization signing key' \
+	--nickname 'Custom Secure Boot key'
+      sudo ls -l /etc/pki/pesign
+      sudo certutil -d /etc/pki/pesign \
+	-n 'Custom Secure Boot key' \
+	-Lr \
+	/etc/pki/pesign/sb_cert.cer
+      sudo ls -l /etc/pki/pesign
+      echo When prompted, enter a new password that encrypts the private key. 
+      sudo pk12util -o /etc/pki/pesign/sb_cert.p12 \
+           -n 'Custom Secure Boot key' \
+           -d /etc/pki/pesign
+      sudo ls -l /etc/pki/pesign
+      sudo openssl pkcs12 \
+	-in /etc/pki/pesign/sb_cert.p12 \
+	-out /etc/pki/pesign/sb_cert.priv \
+	-nocerts \
+	-noenc
+      sudo ls -l /etc/pki/pesign
+      echo "When prompted, enter a one-time password to import your new MOK.der"
+      echo "at the next reboot into the blue Shim UEFI key MOK Management menu:"
+      echo "Enroll MOK > Continue > Yes > "
+      echo "Enter the one-time password you just entered > Reboot"
+      # Screenshots: http://docs.blueworx.com/BVR/InfoCenter/V7/Linux/help/topic/com.ibm.wvrlnx.config.doc/lnx_installation_secure_boot.html
+      sudo mokutil --import /etc/pki/pesign/sb_cert.cer
+    # popd
+  fi
+
+  for KOSPEC in \
+    core/cxl_core.ko \
+    cxl_acpi.ko \
+    cxl_mem.ko \
+    cxl_pci.ko \
+    cxl_pmem.ko \
+    cxl_port.ko \
+  ; do
+    cp $SRCDIR/$KOSPEC $DSTDIR1/$KOSPEC
+
+    if [[ ($MOKUTIL_SB_STATE_ENABLED -ne 0) && ( -f /etc/pki/pesign/sb_cert.priv ) && ( -f /etc/pki/pesign/sb_cert.cer ) ]]; then
+      # Sign new cxl modules for UEFI Secure Boot with machine owner keys (MOK) 
+      sudo /usr/src/kernels/$UNAME_R/scripts/sign-file \
+	sha256 \
+	/etc/pki/pesign/sb_cert.priv \
+	/etc/pki/pesign/sb_cert.cer \
+	$DSTDIR1/$KOSPEC
+      modinfo $DSTDIR1/$KOSPEC | grep signer
+    fi
+  done
 
 
-# Ubuntu 22.04.4: /boot/config-6.5.0-21-generic; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0"
-# Ubuntu 24.04 daily; /boot/config-6.8.0-11-generic; Linux/x86 6.8.0-rc4 Kernel Configuration; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-13ubuntu1) 13.2.0"
-GCCVERSTR=$(grep -Eo 'gcc-[0-9]+' /boot/config-$NEW_UNAME_R) # gcc-12
-GCCVERNUM=${GCCVERSTR#gcc-} # 12
-sudo apt-get -y install $GCCVERSTR
-$GCCVERSTR --version
-# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
-# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
-# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/$GCCVERSTR $GCCVERNUM
-yes "" | sudo update-alternatives --config gcc
-gcc --version
-# 22.04.4: gcc (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-# 24.04 daily: gcc (Ubuntu 12.3.0-15ubuntu1) 12.3.0
-# 24.04 daily: gcc-13 (Ubuntu 13.2.0-21ubuntu1) 13.2.0
+  # Copy newly built cxl kernel modules to $DSTDIR2/cxl-raw-$UNAME_R/
+
+  DSTDIR2=/usr/lib/modules/$UNAME_R/kernel/drivers
+
+  if [ ! -d  $DSTDIR2/cxl-raw-$UNAME_R ]; then
+    sudo cp -r $DSTDIR1 $DSTDIR2/
+  else
+    sudo cp -r $DSTDIR1/* $DSTDIR2/cxl-raw-$UNAME_R/
+  fi
+
+  # ls -lR $DSTDIR2/cxl*
 
 
-cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment to 6.5.13?
-# yes "" | make oldconfig # https://serverfault.com/a/116317/221343
-make olddefconfig # https://serverfault.com/a/538150/221343
-# make menuconfig # This is the text based menu config 
-# make xconfig # This is the GUI based menu config 
-#
-# Enable CONFIG_CXL_MEM_RAW_COMMANDS=y
-# Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
-#   [*] RAW Command Interface for Memory Devices (default=[_])
-#
-sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
-mv .config.cxl_raw_y .config 
-#
-diff /boot/config-${UNAME_R} .config
-grep CONFIG_CXL_MEM_RAW_COMMANDS .config
-# CONFIG_CXL_MEM_RAW_COMMANDS=y
-
-
-# Copy /usr/src/linux-headers-${UNAME_R}/Module.symvers
-#
-# https://docs.kernel.org/kbuild/modules.html#symbols-from-the-kernel-vmlinux-modules
-# During a kernel build, a file named Module.symvers will be
-# generated. Module.symvers contains all exported symbols from the kernel
-# and compiled modules. For each symbol, the corresponding CRC value is
-# also stored.
-#
-#   MODPOST /home/rcpao/Documents/job/sgh/gitlab-ub/ubuntu-kernel/linux-hwe-6.5-6.5.0/drivers/cxl/Module.symvers
-# WARNING: Module.symvers is missing.
-#          Modules may not have dependencies or modversions.
-#          You may get many unresolved symbol errors.
-#          You can set KBUILD_MODPOST_WARN=1 to turn errors into warning
-#          if you want to proceed at your own risk.
-#
-cp /usr/src/linux-headers-${UNAME_R}/Module.symvers .
-
-
-# Fix: Skipping BTF generation for .../drivers/cxl/cxl_acpi.ko due to unavailability of vmlinux
-#
-# https://askubuntu.com/a/1439053
-#sudo apt-get -y install dwarves
-sudo ln -sf /sys/kernel/btf/vmlinux .
-
-
-# fakeroot debian/rules clean
-
-
-# make && make modules_install && make install
-# 
-# make -j clean
-# make modules_prepare
-# make -j 
-# make -j modules
-# sudo make modules_install
-# sudo make install
-#
-# make -j clean
-make modules_prepare
-make -j -C $PWD M=$PWD/drivers/cxl clean
-make -j -C $PWD M=$PWD/drivers/cxl modules
-
-
-# Copy newly built cxl kernel modules to ./cxl-raw-$UNAME_R/
-
-SRCDIR=./drivers/cxl
-DSTDIR1=./drivers/cxl-raw-$UNAME_R 
-
-[ -d $DSTDIR1 ] && rm -rf $DSTDIR1 # signed .ko files are owned by root
-[ ! -d $DSTDIR1/core ] && mkdir -p $DSTDIR1/core
-
-if [[ ( ! -f /var/lib/shim-signed/mok/MOK.priv ) && ( ! -f /var/lib/shim-signed/mok/MOK.der ) ]]; then
-  mokutil --sb-state
-  echo "Creating new UEFI Secure Boot machine owner keys (MOK)"
-  # pushd /var/lib/shim-signed/mok/
-    sudo openssl req -new -x509 \
-    -newkey rsa:2048 -keyout /var/lib/shim-signed/mok/MOK.priv \
-    -outform DER -out /var/lib/shim-signed/mok/MOK.der \
-    -nodes -days 36500 -subj "/CN=$(hostname --fqdn) Driver Kmod Signing MOK"
-    echo "When prompted, enter a one-time password to import your new MOK.der"
-    echo "at the next reboot into the blue Shim UEFI key MOK Management menu:"
-    echo "Enroll MOK > Continue > Yes > "
-    echo "Enter the one-time password you just entered > Reboot"
-    # Screenshots: http://docs.blueworx.com/BVR/InfoCenter/V7/Linux/help/topic/com.ibm.wvrlnx.config.doc/lnx_installation_secure_boot.html
-    sudo mokutil --import /var/lib/shim-signed/mok/MOK.der
-  # popd
-fi
-
-for KOSPEC in \
-  core/cxl_core.ko \
-  cxl_acpi.ko \
-  cxl_mem.ko \
-  cxl_pci.ko \
-  cxl_pmem.ko \
-  cxl_port.ko \
-; do
-  cp $SRCDIR/$KOSPEC $DSTDIR1/$KOSPEC
-  # Sign new cxl modules for UEFI Secure Boot with machine owner keys (MOK) 
-  [ -f /var/lib/shim-signed/mok/MOK.priv ] && [ -f /var/lib/shim-signed/mok/MOK.der ] && sudo /usr/src/linux-headers-$UNAME_R/scripts/sign-file sha256 /var/lib/shim-signed/mok/MOK.priv /var/lib/shim-signed/mok/MOK.der $DSTDIR1/$KOSPEC
-  zstd $DSTDIR1/$KOSPEC
-done
-
-
-# Copy newly built cxl kernel modules to $DSTDIR2/cxl-raw-$UNAME_R/
-
-DSTDIR2=/usr/lib/modules/$UNAME_R/kernel/drivers
-
-if [ ! -d  $DSTDIR2/cxl-raw-$UNAME_R ]; then
-  sudo cp -r $DSTDIR1 $DSTDIR2/
-else
-  sudo cp -r $DSTDIR1/* $DSTDIR2/cxl-raw-$UNAME_R/
-fi
-
-# ls -lR $DSTDIR2/cxl*
-
-
-SCRIPTSPEC=../cxl-raw.sh
-# Enable CONFIG_CXL_MEM_RAW_COMMANDS=y modules
-cat <<EOF > $SCRIPTSPEC
+  SCRIPTSPEC=../cxl-raw.sh
+  # Enable CONFIG_CXL_MEM_RAW_COMMANDS=y modules
+  cat <<EOF > $SCRIPTSPEC
 #!/bin/bash -x
 [ -L $DSTDIR2/cxl ] && sudo rm $DSTDIR2/cxl 
 [ -d $DSTDIR2/cxl ] && sudo mv $DSTDIR2/cxl $DSTDIR2/cxl-original
 [ -d $DSTDIR2/cxl-raw-$UNAME_R ] && sudo ln -s $DSTDIR2/cxl-raw-$UNAME_R $DSTDIR2/cxl
+sudo update-initramfs -c -k ${UNAME_R} # update /boot/initrd.img-${UNAME_R} in case cxl drivers are loaded at Linux kernel boot
 EOF
-chmod +x $SCRIPTSPEC
-sudo cp $SCRIPTSPEC $DSTDIR2/
+  chmod +x $SCRIPTSPEC
+  sudo cp $SCRIPTSPEC $DSTDIR2/
 
-SCRIPTSPEC=../cxl-original.sh
-# Restore original cxl modules
-cat <<EOF > $SCRIPTSPEC
+  SCRIPTSPEC=../cxl-original.sh
+  # Restore original cxl modules
+  cat <<EOF > $SCRIPTSPEC
 #!/bin/bash -x
 [ -L $DSTDIR2/cxl ] && sudo rm $DSTDIR2/cxl 
 [ ! -d $DSTDIR2/cxl ] && [ -d $DSTDIR2/cxl-original ] && sudo ln -s $DSTDIR2/cxl-original $DSTDIR2/cxl
+sudo update-initramfs -c -k ${UNAME_R} # update /boot/initrd.img-${UNAME_R} in case cxl drivers are loaded at Linux kernel boot
 EOF
-chmod +x $SCRIPTSPEC
-sudo cp $SCRIPTSPEC $DSTDIR2/
+  chmod +x $SCRIPTSPEC
+  sudo cp $SCRIPTSPEC $DSTDIR2/
 
-# ls -lR $DSTDIR2/cxl*
+  # ls -lR $DSTDIR2/cxl*
 
 
-SCRIPTSPEC=../cxl-lsmod.sh
-# list cxl modules
-cat <<EOF > $SCRIPTSPEC
+  SCRIPTSPEC=../cxl-lsmod.sh
+  # list cxl modules
+  cat <<EOF > $SCRIPTSPEC
 lsmod | grep cxl
 EOF
 chmod +x $SCRIPTSPEC
@@ -367,6 +336,7 @@ DOTZSTEXT=""
 SCRIPTSPEC=../cxl-insmod.sh
 # install cxl modules
 cat <<EOF > $SCRIPTSPEC
+# DOTZSTEXT=.zst
 DOTZSTEXT=$DOTZSTEXT
 sudo insmod $DSTDIR2/cxl/core/cxl_core.ko\$DOTZSTEXT # cxl_core must be first
 sudo insmod $DSTDIR2/cxl/cxl_acpi.ko\$DOTZSTEXT
@@ -375,12 +345,12 @@ sudo insmod $DSTDIR2/cxl/cxl_pci.ko\$DOTZSTEXT
 sudo insmod $DSTDIR2/cxl/cxl_pmem.ko\$DOTZSTEXT
 sudo insmod $DSTDIR2/cxl/cxl_port.ko\$DOTZSTEXT
 EOF
-chmod +x $SCRIPTSPEC
-sudo cp $SCRIPTSPEC $DSTDIR2/
+  chmod +x $SCRIPTSPEC
+  sudo cp $SCRIPTSPEC $DSTDIR2/
 
-SCRIPTSPEC=../cxl-rmmod.sh
-# remove cxl modules
-cat <<EOF > $SCRIPTSPEC
+  SCRIPTSPEC=../cxl-rmmod.sh
+  # remove cxl modules
+  cat <<EOF > $SCRIPTSPEC
 sudo rmmod cxl_acpi
 sudo rmmod cxl_mem
 sudo rmmod cxl_pci
@@ -388,7 +358,15 @@ sudo rmmod cxl_pmem
 sudo rmmod cxl_port
 sudo rmmod cxl_core # cxl_core must be last
 EOF
-chmod +x $SCRIPTSPEC
-sudo cp $SCRIPTSPEC $DSTDIR2/
+  chmod +x $SCRIPTSPEC
+  sudo cp $SCRIPTSPEC $DSTDIR2/
 
-ls -lR $DSTDIR2/cxl*
+  ls -lR $DSTDIR2/cxl*
+
+
+  # $DSTDIR2/cxl-lsmod.sh
+  $DSTDIR2/cxl-rmmod.sh # remove existing cxl driver modules
+  # $DSTDIR2/cxl-lsmod.sh
+  $DSTDIR2/cxl-raw.sh # replace original cxl driver modules with raw enabled ones
+  $DSTDIR2/cxl-insmod.sh # insert existing cxl driver modules
+  # $DSTDIR2/cxl-lsmod.sh
