@@ -289,4 +289,4 @@ $DSTDIR2/cxl-rmmod.sh # remove existing cxl driver modules
 # $DSTDIR2/cxl-lsmod.sh
 $DSTDIR2/cxl-raw.sh # replace original cxl driver modules with raw enabled ones
 $DSTDIR2/cxl-insmod.sh # insert existing cxl driver modules
-# $DSTDIR2/cxl-lsmod.sh
+$DSTDIR2/cxl-lsmod.sh
