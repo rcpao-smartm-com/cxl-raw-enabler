@@ -218,7 +218,8 @@ fi
 # ls -lR $DSTDIR2/cxl*
 
 
-SCRIPTSPEC=../cxl-raw.sh
+SCRIPTDIR=./drivers
+SCRIPTSPEC=$SCRIPTDIR/cxl-raw.sh
 # Enable CONFIG_CXL_MEM_RAW_COMMANDS=y modules
 cat <<EOF > $SCRIPTSPEC
 #!/bin/bash -x
@@ -230,7 +231,7 @@ EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
 
-SCRIPTSPEC=../cxl-original.sh
+SCRIPTSPEC=$SCRIPTDIR/cxl-original.sh
 # Restore original cxl modules
 cat <<EOF > $SCRIPTSPEC
 #!/bin/bash -x
@@ -244,7 +245,7 @@ sudo cp $SCRIPTSPEC $DSTDIR2/
 # ls -lR $DSTDIR2/cxl*
 
 
-SCRIPTSPEC=../cxl-lsmod.sh
+SCRIPTSPEC=$SCRIPTDIR/cxl-lsmod.sh
 # list cxl modules
 cat <<EOF > $SCRIPTSPEC
 lsmod | grep cxl
@@ -257,7 +258,7 @@ DOTZSTEXT=""
 [ -d $DSTDIR2/cxl ] && [ -f $DSTDIR2/cxl/core/cxl_core.ko.zst ] && DOTZSTEXT=.zst
 [ -f $DSTDIR2/cxl/core/cxl_core.ko.zst ] && DOTZSTEXT=.zst
 # Ubuntu 24.04 daily ships with *.ko.zstd Zstd compressed kernel modules
-SCRIPTSPEC=../cxl-insmod.sh
+SCRIPTSPEC=$SCRIPTDIR/cxl-insmod.sh
 # install cxl modules
 cat <<EOF > $SCRIPTSPEC
 # DOTZSTEXT=.zst
@@ -272,7 +273,7 @@ EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
 
-SCRIPTSPEC=../cxl-rmmod.sh
+SCRIPTSPEC=$SCRIPTDIR/cxl-rmmod.sh
 # remove cxl modules
 cat <<EOF > $SCRIPTSPEC
 sudo rmmod cxl_acpi
