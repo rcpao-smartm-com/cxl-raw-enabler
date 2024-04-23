@@ -109,13 +109,17 @@ make olddefconfig # https://serverfault.com/a/538150/221343
 # Enable CONFIG_CXL_MEM_RAW_COMMANDS=y
 # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
 #   [*] RAW Command Interface for Memory Devices (default=[_])
+# Enable CONFIG_CXL_REGION_INVALIDATION_TEST=y
 #
 sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
+mv .config.cxl_raw_y .config 
+sed -e 's/# CONFIG_CXL_REGION_INVALIDATION_TEST is not set/CONFIG_CXL_REGION_INVALIDATION_TEST=y/' < .config > .config.cxl_raw_y
 mv .config.cxl_raw_y .config 
 #
 diff /boot/config-${UNAME_R} .config
 grep CONFIG_CXL_MEM_RAW_COMMANDS .config
 # CONFIG_CXL_MEM_RAW_COMMANDS=y
+# CONFIG_CXL_REGION_INVALIDATION_TEST=y
 
 
 # Copy /usr/src/linux-headers-${UNAME_R}/Module.symvers
