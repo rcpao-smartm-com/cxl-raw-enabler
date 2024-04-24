@@ -223,7 +223,7 @@ SCRIPTSPEC=../cxl-raw.sh
 cat <<EOF > $SCRIPTSPEC
 #!/bin/bash -x
 [ -L $DSTDIR2/cxl ] && sudo rm $DSTDIR2/cxl 
-[ -d $DSTDIR2/cxl ] && sudo mv $DSTDIR2/cxl $DSTDIR2/cxl-original
+[ -d $DSTDIR2/cxl ] && [ ! -d $DSTDIR2/cxl-original ] && sudo mv $DSTDIR2/cxl $DSTDIR2/cxl-original
 [ -d $DSTDIR2/cxl-raw-$UNAME_R ] && sudo ln -s $DSTDIR2/cxl-raw-$UNAME_R $DSTDIR2/cxl
 sudo update-initramfs -c -k ${UNAME_R} # update /boot/initrd.img-${UNAME_R} in case cxl drivers are loaded at Linux kernel boot
 EOF
