@@ -4,6 +4,10 @@
 # $UNAME_R is the currently running kernel or the kernel you wish to build
 # UNAME_R=6.5.0-21-generic
 # UNAME_R=6.5.0-26-generic
+# UNAME_R=6.5.0-27-generic
+# UNAME_R=6.5.0-28-generic
+# UNAME_R=linux-hwe-6.5-6.5.0
+# UNAME_R=linux-oem-6.5-6.5.0
 UNAME_R=$(uname -r)
 UNAME_R_3=${UNAME_R%%-*} # "6.5.0" remove first/greedy "-##-generic"
 UNAME_R_2=${UNAME_R%.*} # "6.5" remove last ".*"
@@ -70,6 +74,10 @@ if [ ${RETVAL} -eq 0 ]; then
   # cd xxx # fail test
   # RETVAL=$? # 1 if cd fails
   # [ "$(basename $PWD)"!="linux-hwe-${UNAME_R_2}-${UNAME_R_3}" ] && cd linux-${UNAME_R_3} # "linux-6.8.0"
+  if [ ${RETVAL} -ne 0 ]; then
+    cd linux-oem-${UNAME_R_2}-${UNAME_R_3} # "linux-oem-6.5-6.5.0"
+    RETVAL=$?
+  fi
   if [ ${RETVAL} -ne 0 ]; then
     cd linux-${UNAME_R_3} # "linux-6.8.0"
     RETVAL=$?
