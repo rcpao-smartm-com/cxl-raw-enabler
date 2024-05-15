@@ -56,6 +56,7 @@ koji download-build --arch=src kernel-$UNAME_R
 rpm -Uvh kernel-${UNAME_R_NO_MACHINE}.src.rpm
 # RPM contents extracted to ${HOME}/rpmbuild/{SOURCES,SPECS}
 
+: ' # comment
 cd ~/rpmbuild/SPECS
 sudo dnf -y builddep kernel.spec
 # Give a name to our kernel so that we can easily distinguish it from
@@ -65,6 +66,7 @@ sed -i 's/# define buildid .local/%define buildid .cxlraw/g' kernel.spec
 # Verify that sed succeeded
 grep cxlraw kernel.spec
 # Expected result: "%define buildid .cxlraw"
+'
 
 # KERNELLOCAL=./kernel # git repo
 KERNELLOCAL=~/rpmbuild/SOURCES/kernel-local
@@ -74,11 +76,17 @@ CONFIG_CXL_MEM_RAW_COMMANDS=y
 CONFIG_CXL_REGION_INVALIDATION_TEST=y
 EOF
 
+
 # Build the kernel
-time rpmbuild -bb --target=x86_64 kernel.spec 2>&1 | tee ~/Documents/job/sgh/gitlab-ub/cxl-raw-enabler/rpm-out
+# time rpmbuild -bb --target=x86_64 kernel.spec 2>&1 | tee ~/Documents/job/sgh/gitlab-ub/cxl-raw-enabler/rpmbuild_-bb_output.txt
+# real	57m41.740s
+# user	771m44.426s
+# sys	178m12.040s
 
 
 # cp .config ~/rpmbuild/SOURCES/config-`uname -m`-generic
+grep -i CONFIG_CXL ~/rpmbuild/SOURCES/.config
+grep -i CONFIG_CXL ~/rpmbuild/SOURCES/config-`uname -m`-generic
 
 
 exit
