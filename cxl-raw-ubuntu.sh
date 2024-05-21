@@ -94,6 +94,11 @@ if [ ${RETVAL} -eq 0 ]; then
 else
   # https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide
   git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
+  RETVAL=$? # DBG: non-zero is fatal
+  if [ ${RETVAL} -ne 0 ]; then
+    echo "Error: git clone failed."
+    exit 1
+  fi
   ls -ld ${VERSION_CODENAME}
   cd ${VERSION_CODENAME}
   # KVERS=${UNAME_R%-generic} # remove "-generic"
