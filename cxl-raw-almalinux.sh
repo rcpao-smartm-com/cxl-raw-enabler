@@ -29,13 +29,37 @@ source /etc/os-release
 # REDHAT_SUPPORT_PRODUCT="AlmaLinux"
 # REDHAT_SUPPORT_PRODUCT_VERSION="9.3"
 
+# NAME="AlmaLinux"
+# VERSION="9.4 (Seafoam Ocelot)"
+# ID="almalinux"
+# ID_LIKE="rhel centos fedora"
+# VERSION_ID="9.4"
+# PLATFORM_ID="platform:el9"
+# PRETTY_NAME="AlmaLinux 9.4 (Seafoam Ocelot)"
+# ANSI_COLOR="0;34"
+# LOGO="fedora-logo-icon"
+# CPE_NAME="cpe:/o:almalinux:almalinux:9::baseos"
+# HOME_URL="https://almalinux.org/"
+# DOCUMENTATION_URL="https://wiki.almalinux.org/"
+# BUG_REPORT_URL="https://bugs.almalinux.org/"
+# 
+# ALMALINUX_MANTISBT_PROJECT="AlmaLinux-9"
+# ALMALINUX_MANTISBT_PROJECT_VERSION="9.4"
+# REDHAT_SUPPORT_PRODUCT="AlmaLinux"
+# REDHAT_SUPPORT_PRODUCT_VERSION="9.4"
+# SUPPORT_END=2032-06-01
+
 
 # https://wiki.crowncloud.net/?Installing_the_Linux_Kernel_6x_on_AlmaLinux_9
 # WARNING: elrepo.org kernel-ml is unsigned.  Secure Boot must be disabled.
 
+# elrepo kernel branch
+KERNEL_BRANCH=lt # long term
+# KERNEL_BRANCH=ml # mainline
+
 sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
 sudo dnf -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
-sudo dnf -y --enablerepo=elrepo-kernel install kernel-ml kernel-ml-devel
+sudo dnf -y --enablerepo=elrepo-kernel install kernel-${KERNEL_BRANCH} kernel-${KERNEL_BRANCH}-devel
 # file /usr/include/asm-generic/bitsperlong.h from install of kernel-ml-headers-6.8.4-1.el9.elrepo.x86_64 conflicts with file from package kernel-headers-5.14.0-362.24.1.el9_3.0.1.x86_64
 # https://elrepo.org/wiki/doku.php?id=kernel-ml
 # There is no need to install the kernel-ml-headers package. It is only necessary if you intend to rebuild glibc and, thus, the entire operating system. If there is a need to have the kernel headers installed, you should use the current distributed kernel-headers package as that is related to the current version of glibc. When you see a message like “your kernel headers for kernel xxx cannot be found …”, you most likely need the kernel-ml-devel package, not the kernel-ml-headers package
@@ -64,7 +88,8 @@ if [ "$NEW_UNAME_R"  !=  "$UNAME_R" ]; then
   done
 
 fi
-# After reboot, kernel signature invalid
+# After reboot, kernel signature is invalid, so elrepo kernels are unsigned.
+# You must disable Secure Boot to run elrepo kernels.
 # 'uname -r'= 6.8.4-1.el9.elrepo.x86_64
 
 # kernel packages: https://cbs.centos.org/koji/packageinfo?packageID=455
@@ -73,6 +98,10 @@ fi
 # https://cbs.centos.org/kojifiles/packages/kernel/${UNAME_R_NO_DASH}/1.el9/src/kernel-${UNAME_R_NO_DASH}-1.el9.src.rpm
 # https://cbs.centos.org/kojifiles/packages/kernel/${NEW_UNAME_R_NO_DASH}/1.el9/src/kernel-${NEW_UNAME_R_NO_DASH}-1.el9.src.rpm
 
+exit # Only upgrade to the latest mainline kernel. Skip building from sources.
+
+
+# Build kernel from sources
 
 # https://wiki.almalinux.org/documentation/building-packages-guide.html#setup-mock-and-rpm-build
 sudo dnf install -y epel-release
