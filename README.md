@@ -61,6 +61,6 @@ lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/
 el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.9 (main line) in elrepo9 RPM systems such as
 AlmaLinux9, RockyLinux9, etc.
 
---
-
-Ignore the other scripts in this repository as they are non-functional.
+---
+# Ignore 
+Ignore the other non-functional scripts in this repository.
