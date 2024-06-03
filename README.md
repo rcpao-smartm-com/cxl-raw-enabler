@@ -2,7 +2,7 @@
 
 http://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler
 
-This bash script, cxl-raw-ubuntu.sh, gets the source code for 
+The bash script, cxl-raw-ubuntu.sh, gets the source code for 
 the currently running kernel, enables CONFIG_CXL_MEM_RAW_COMMANDS=y, 
 and creates bash scripts in 
 `/usr/lib/modules/$UNAME_R/kernel/drivers/`:
@@ -13,8 +13,8 @@ and creates bash scripts in
 - cxl-insmod.sh - install the cxl modules
 - cxl-rmmod.sh - remove the cxl modules
 
-Ubuntu 22.04.4 LTS base installs kernel 6.5.0-18.
-As of 2023-03-29, the latest kernel is 6.5.0-26.
+Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.
+As of 2023-06-02, the latest kernel is 6.5.0-35.
 
 Copy cxl-raw-ubuntu.sh somewhere under your home directory 
 such as ~/Documents/.
@@ -56,3 +56,7 @@ $ ls -Fl cxl
 lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/kernel/drivers/cxl-original/
 
 ```
+# el9-kernel.sh
+
+el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.9 (main line) in elrepo9 RPM systems such as
+AlmaLinux9, RockyLinux9, etc.
