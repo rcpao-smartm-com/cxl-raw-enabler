@@ -1,6 +1,11 @@
 #!/bin/bash -x
 
 
+# script cxl-raw-ubuntu_$(date +%Y%m%d-%H%M%S)_$(hostname)_$(uname -r).txt
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+LOGFILE=cxl-raw-ubuntu_${TIMESTAMP}_$(hostname)_$(uname -r).txt
+
+
 # $UNAME_R is the currently running kernel or the kernel you wish to build
 # UNAME_R=6.5.0-21-generic
 # UNAME_R=6.5.0-26-generic
@@ -65,9 +70,32 @@ gcc --version
 # 24.04 daily: gcc-13 (Ubuntu 13.2.0-21ubuntu1) 13.2.0
 
 
+# ERROR:
+# https://askubuntu.com/a/938955
+# 'apt-get source ...' only gets the _latest_ source:
+# + uname -r
+# 6.7.6-060706-generic
+# + apt-get source linux-image-unsigned-6.7.6-060706-generic
+# Reading package lists... Done
+# Picking 'linux' as source package instead of 'linux-image-unsigned-6.7.6-060706-generic'
+# Need to get 232 MB of source archives.
+# Get:1 http://us.archive.ubuntu.com/ubuntu noble-updates/main linux 6.8.0-35.35 (dsc) [9,267 B]
+# Get:2 http://us.archive.ubuntu.com/ubuntu noble-updates/main linux 6.8.0-35.35 (tar) [230 MB]
+# Get:3 http://us.archive.ubuntu.com/ubuntu noble-updates/main linux 6.8.0-35.35 (diff) [1,617 kB]
+# Fetched 232 MB in 44s (5,314 kB/s)
+# dpkg-source: info: extracting linux in linux-6.8.0
+# dpkg-source: info: unpacking linux_6.8.0.orig.tar.gz
+# dpkg-source: info: applying linux_6.8.0-35.35.diff.gz
+# dpkg-source: info: upstream files that have been modified:
 uname -r
-apt-get source linux-image-unsigned-${UNAME_R}
+# apt-get source linux-image-unsigned-${UNAME_R}
+apt-get source linux-source-${UNAME_R_3}
 RETVAL=$? # DBG: non-zero will use git clone
+# https://ubuntuforums.org/showthread.php?t=1758823&p=10822030#post10822030
+# If you really want the older kernel info, you can get it from the
+# Ubuntu Git repository. The tags will allow to you select the exact
+# version you want.
+RETVAL=-1 # force using git instead of 'apt source'
 if [ ${RETVAL} -eq 0 ]; then
   cd linux-hwe-${UNAME_R_2}-${UNAME_R_3} # "linux-hwe-6.5-6.5.0"
   RETVAL=$? # 0=cd success, contrary to 'man bash cd' true=success
@@ -93,18 +121,39 @@ if [ ${RETVAL} -eq 0 ]; then
     # Manually created folders will confuse 'cd linux-*/'
 else
   # https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide
-  git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
-  RETVAL=$? # DBG: non-zero is fatal
-  if [ ${RETVAL} -ne 0 ]; then
-    echo "Error: git clone failed."
-    exit 1
+  if [ ! -d ${VERSION_CODENAME} ]; then
+    # git clone --depth 1 --branch <tag_name> <repo_url> # https://stackoverflow.com/a/21699307/1707260
+    git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
+    RETVAL=$? # DBG: non-zero is fatal
+    if [ ${RETVAL} -ne 0 ]; then
+      echo "Error: git clone failed."
+      exit 1
+    fi
   fi
   ls -ld ${VERSION_CODENAME}
   cd ${VERSION_CODENAME}
-  # KVERS=${UNAME_R%-generic} # remove "-generic"
-  GITTAG=$(git tag -l Ubuntu-${KVERS}.*)
+  git pull
+  # git tag -l "Ubuntu-${UNAME_R_2}*" # UNAME_R_2=${UNAME_R%.*} # "6.5" remove last ".*"
+  # GITTAG=$(git tag -l "Ubuntu-${UNAME_R_2}*")
+  # git tag -l "Ubuntu-${UNAME_R_3}*" # UNAME_R_3=${UNAME_R%%-*} # "6.5.0" remove first/greedy "-##-generic"
+  # GITTAG=$(git tag -l "Ubuntu-${UNAME_R_3}*")
+  git tag -l "Ubuntu-${KVERS}*" # KVERS=${UNAME_R%-generic} # remove "-generic"
+  GITTAG=$(git tag -l "Ubuntu-${KVERS}.*")
+  if [ -z "${GITTAG}" ]; then
+    # echo "Error: git tag -l \"\${UNAME_R_2}*\" failed."
+    # echo "Error: git tag -l \"\${UNAME_R_3}*\" failed."
+    echo "Error: git tag -l \"Ubuntu-\${KVERS}.*\" failed."
+    exit 1
+  fi
   git checkout -b ${GITTAG}-cxl-raw ${GITTAG}
+  RETVAL=$? # DBG: non-zero is fatal
+  if [ ${RETVAL} -ne 0 ]; then
+    echo "Error: git checkout failed."
+    exit 1
+  fi
 fi
+
+pwd
 
 
 # ls -RF debian
@@ -289,12 +338,12 @@ sudo cp $SCRIPTSPEC $DSTDIR2/
 SCRIPTSPEC=$SCRIPTDIR/cxl-rmmod.sh
 # remove cxl modules
 cat <<EOF > $SCRIPTSPEC
-sudo rmmod cxl_acpi
-sudo rmmod cxl_mem
-sudo rmmod cxl_pci
-sudo rmmod cxl_pmem
-sudo rmmod cxl_port
-sudo rmmod cxl_core # cxl_core must be last
+sudo rmmod -v cxl_acpi
+sudo rmmod -v cxl_mem
+sudo rmmod -v cxl_pci
+sudo rmmod -v cxl_pmem
+sudo rmmod -v cxl_port
+sudo rmmod -v cxl_core # cxl_core must be last
 EOF
 chmod +x $SCRIPTSPEC
 sudo cp $SCRIPTSPEC $DSTDIR2/
@@ -302,9 +351,9 @@ sudo cp $SCRIPTSPEC $DSTDIR2/
 ls -lR $DSTDIR2/cxl*
 
 
-# $DSTDIR2/cxl-lsmod.sh
-$DSTDIR2/cxl-rmmod.sh # remove existing cxl driver modules
-# $DSTDIR2/cxl-lsmod.sh
-$DSTDIR2/cxl-raw.sh # replace original cxl driver modules with raw enabled ones
-$DSTDIR2/cxl-insmod.sh # insert existing cxl driver modules
-$DSTDIR2/cxl-lsmod.sh
+# bash -x $DSTDIR2/cxl-lsmod.sh
+bash -x $DSTDIR2/cxl-raw.sh # replace original cxl driver modules with raw enabled ones
+bash -x $DSTDIR2/cxl-rmmod.sh # remove existing cxl driver modules
+# bash -x $DSTDIR2/cxl-lsmod.sh
+bash -x $DSTDIR2/cxl-insmod.sh # insert existing cxl driver modules
+bash -x $DSTDIR2/cxl-lsmod.sh
