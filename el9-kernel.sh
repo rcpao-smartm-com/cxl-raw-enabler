@@ -1,6 +1,11 @@
 #!/bin/bash
 
 
+# script el9-kernel_$(date +%Y%m%d-%H%M%S)_$(hostname)_$(uname -r).txt
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+LOGFILE=el9-kernel_${TIMESTAMP}_$(hostname)_$(uname -r).txt
+
+
 # $UNAME_R is the currently running kernel or the kernel you wish to build
 # UNAME_R=5.14.0-362.8.1.el9_3.x86_64
 # UNAME_R=5.14.0-362.24.2.el9_3.x86_64
