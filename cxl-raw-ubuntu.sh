@@ -95,7 +95,7 @@ RETVAL=$? # DBG: non-zero will use git clone
 # If you really want the older kernel info, you can get it from the
 # Ubuntu Git repository. The tags will allow to you select the exact
 # version you want.
-RETVAL=-1 # force using git instead of 'apt source'
+#RETVAL=-1 # force using git instead of 'apt source'
 if [ ${RETVAL} -eq 0 ]; then
   cd linux-hwe-${UNAME_R_2}-${UNAME_R_3} # "linux-hwe-6.5-6.5.0"
   RETVAL=$? # 0=cd success, contrary to 'man bash cd' true=success
