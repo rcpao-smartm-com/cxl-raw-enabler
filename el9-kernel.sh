@@ -81,6 +81,21 @@ sudo dnf -y --enablerepo=elrepo-kernel install kernel-${KERNEL_BRANCH} kernel-${
 # https://elrepo.org/wiki/doku.php?id=kernel-ml
 # There is no need to install the kernel-ml-headers package. It is only necessary if you intend to rebuild glibc and, thus, the entire operating system. If there is a need to have the kernel headers installed, you should use the current distributed kernel-headers package as that is related to the current version of glibc. When you see a message like “your kernel headers for kernel xxx cannot be found …”, you most likely need the kernel-ml-devel package, not the kernel-ml-headers package
 
+
+# echo kernel packages: https://cbs.centos.org/koji/packageinfo?packageID=455
+# echo https://cbs.centos.org/kojifiles/packages/kernel/6.8.2/1.el9/src/kernel-6.8.2-1.el9.src.rpm
+# echo https://cbs.centos.org/kojifiles/packages/kernel/6.8.4/1.el9/src/kernel-6.8.4-1.el9.src.rpm
+# echo https://cbs.centos.org/kojifiles/packages/kernel/${UNAME_R_NO_DASH}/1.el9/src/kernel-${UNAME_R_NO_DASH}-1.el9.src.rpm
+# echo https://cbs.centos.org/kojifiles/packages/kernel/${NEW_UNAME_R_NO_DASH}/1.el9/src/kernel-${NEW_UNAME_R_NO_DASH}-1.el9.src.rpm
+
+
+echo Use grubby to select the default kernel for GRUB to boot:
+echo sudo grubby --info=ALL
+echo sudo grubby --set-default-index=0 (change 0 to the index you want)
+echo
+echo You must disable Secure Boot to run elrepo kernels as they are unsigned.
+
+
 # /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
 NEW_UNAME_R_BOOT_VMLINUZ=$(sudo grubby --default-kernel) # /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
 NEW_UNAME_R=${NEW_UNAME_R_BOOT_VMLINUZ#/boot/vmlinuz-} # 6.8.4-1.el9.elrepo.x86_64
@@ -104,17 +119,3 @@ if [ "$NEW_UNAME_R"  !=  "$UNAME_R" ]; then
     esac
   done
 fi
-# After reboot, kernel signature is invalid, so elrepo kernels are unsigned.
-# You must disable Secure Boot to run elrepo kernels.
-# 'uname -r'= 6.8.4-1.el9.elrepo.x86_64
-
-# kernel packages: https://cbs.centos.org/koji/packageinfo?packageID=455
-# https://cbs.centos.org/kojifiles/packages/kernel/6.8.2/1.el9/src/kernel-6.8.2-1.el9.src.rpm
-# https://cbs.centos.org/kojifiles/packages/kernel/6.8.4/1.el9/src/kernel-6.8.4-1.el9.src.rpm
-# https://cbs.centos.org/kojifiles/packages/kernel/${UNAME_R_NO_DASH}/1.el9/src/kernel-${UNAME_R_NO_DASH}-1.el9.src.rpm
-# https://cbs.centos.org/kojifiles/packages/kernel/${NEW_UNAME_R_NO_DASH}/1.el9/src/kernel-${NEW_UNAME_R_NO_DASH}-1.el9.src.rpm
-
-
-echo Use grubby to select the default kernel for GRUB to boot:
-echo sudo grubby --info=ALL
-echo sudo grubby --set-default-index=0 (change 0 to the index you want)
