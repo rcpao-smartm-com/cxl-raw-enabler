@@ -89,11 +89,12 @@ sudo dnf -y --enablerepo=elrepo-kernel install kernel-${KERNEL_BRANCH} kernel-${
 # echo https://cbs.centos.org/kojifiles/packages/kernel/${NEW_UNAME_R_NO_DASH}/1.el9/src/kernel-${NEW_UNAME_R_NO_DASH}-1.el9.src.rpm
 
 
-echo Use grubby to select the default kernel for GRUB to boot:
-echo sudo grubby --info=ALL
-echo sudo grubby --set-default-index=0 (change 0 to the index you want)
-echo
-echo You must disable Secure Boot to run elrepo kernels as they are unsigned.
+echo "Use grubby to select the default kernel for GRUB to boot:"
+sudo grubby --info=ALL
+sudo grubby --default-index
+echo "sudo grubby --set-default-index=0 (change 0 to the index you want)"
+echo ""
+echo "You must disable Secure Boot to run elrepo kernels as they are unsigned."
 
 
 # /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
