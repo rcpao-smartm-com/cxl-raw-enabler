@@ -91,8 +91,10 @@ sudo dnf -y --enablerepo=elrepo-kernel install kernel-${KERNEL_BRANCH} kernel-${
 
 echo "Use grubby to select the default kernel for GRUB to boot:"
 sudo grubby --info=ALL
+echo -n "'grubby --default-index' returns "
 sudo grubby --default-index
-echo "sudo grubby --set-default-index=0 (change 0 to the index you want)"
+echo "as the current default boot index."
+echo "Run 'sudo grubby --set-default-index=#' where # is the new default boot index."
 echo ""
 echo "You must disable Secure Boot to run elrepo kernels as they are unsigned."
 
