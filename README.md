@@ -16,6 +16,9 @@ and creates bash scripts in
 Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.
 As of 2023-06-02, the latest kernel is 6.5.0-35.
 
+Only Ubuntu 22.04.4 and 23.10.1 with kernel 6.5 and Ubuntu 24.04 with
+kernel 6.8 are working.  The el9 scripts with kernel 6.8 do not work.
+
 Copy cxl-raw-ubuntu.sh somewhere under your home directory 
 such as ~/Documents/.
 Your user account must be able to sudo.
