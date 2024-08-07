@@ -14,10 +14,11 @@ and creates bash scripts in
 - cxl-rmmod.sh - remove the cxl modules
 
 Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.
-As of 2024-08-07, the latest kernel is 6.5.0-44.
+As of 2024-08-07, the latest 22.04.4 kernel is 6.5.0-45, 
+and the latest 24.04 kernel is 6.8.0-39.
 
 Only Ubuntu 22.04.4 and 23.10.1 with kernel 6.5.0 and Ubuntu 24.04 with
-kernel 6.8.0 are working.  The el9 scripts with kernel 6.8 do not work.
+kernel 6.8.0 are working.
 
 Copy cxl-raw-ubuntu.sh somewhere under your home directory 
 such as ~/Documents/.
