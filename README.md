@@ -60,7 +60,7 @@ $ ls -Fl cxl
 lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/kernel/drivers/cxl-original/
 
 ```
-Note: The last Ubuntu 22.04.4 kernel version that creates /dev/cxl/mem0 
+Note: The last Ubuntu 22.04.4 kernel version that works with CXL memory 
 is 6.7.6.  Version 6.7.7 and Ubuntu 24.04 kernel version 6.8.0-39 do not.
 
 # el9-kernel.sh
