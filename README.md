@@ -14,10 +14,10 @@ and creates bash scripts in
 - cxl-rmmod.sh - remove the cxl modules
 
 Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.
-As of 2023-06-02, the latest kernel is 6.5.0-35.
+As of 2024-08-07, the latest kernel is 6.5.0-44.
 
-Only Ubuntu 22.04.4 and 23.10.1 with kernel 6.5 and Ubuntu 24.04 with
-kernel 6.8 are working.  The el9 scripts with kernel 6.8 do not work.
+Only Ubuntu 22.04.4 and 23.10.1 with kernel 6.5.0 and Ubuntu 24.04 with
+kernel 6.8.0 are working.  The el9 scripts with kernel 6.8 do not work.
 
 Copy cxl-raw-ubuntu.sh somewhere under your home directory 
 such as ~/Documents/.
@@ -63,6 +63,7 @@ lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/
 
 el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.9 (main line)
 in elrepo9 RPM systems such as RedHat9, AlmaLinux9, RockyLinux9, etc.
+elrepo9 build with CONFIG_CXL_MEM_RAW_COMMANDS=n.
 
 ---
 # Ignore 
