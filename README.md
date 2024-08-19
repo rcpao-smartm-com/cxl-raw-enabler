@@ -5,7 +5,7 @@ http://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler
 The bash script, cxl-raw-ubuntu.sh, gets the source code for 
 the currently running kernel, enables CONFIG_CXL_MEM_RAW_COMMANDS=y, 
 and creates bash scripts in 
-`/usr/lib/modules/$UNAME_R/kernel/drivers/`:
+`/usr/lib/modules/$(uname -r)/kernel/drivers/`:
 
 - cxl-raw.sh - enable CXL RAW modules
 - cxl-original.sh - restore the original ubuntu kernel CXL modules
@@ -30,7 +30,7 @@ $ chmod +x cxl-raw-ubuntu.sh
 $ ./cxl-raw-ubuntu.sh
 [sudo] password for user1:
 ...
-$ cd /usr/lib/modules/$UNAME_R/kernel/drivers/
+$ cd /usr/lib/modules/$(uname -r)/kernel/drivers/
 $ ls -F cxl*
 cxl@            cxl-lsmod.sh*     cxl-raw-6.5.0-26-generic@  cxl-rmmod.sh*
 cxl-insmod.sh*  cxl-original.sh*  cxl-raw.sh*
@@ -64,7 +64,7 @@ Note: The last Ubuntu 22.04.4 kernel version that works with CXL memory
 is 6.7.6.  Version 6.7.7 and Ubuntu 24.04 kernel version 6.8.0-39 do not.
 
 
-## Make Ubuntu GRUB2 remember the last choice (from https://askubuntu.com/a/149572)
+## Make Ubuntu GRUB2 remember the last choice
 
 $ sudo nano /etc/default/grub
 # GRUB_DEFAULT=0
@@ -85,6 +85,8 @@ GRUB_CMDLINE_LINUX_DEFAULT=""
 
 $ sudo update-grub
 
+Source: https://askubuntu.com/a/149572
+
 
 ## Disable automatic upgrades in Ubuntu
 
@@ -93,6 +95,8 @@ To prevent the mysterious kernel upgrade from 6.5.0 to 6.8.0:
 $ sudo apt-get remove unattended-upgrades
 
 If you want to enable them again, replace "remove" with "install".
+
+Source: https://askubuntu.com/a/1322357
 
 
 # el9-kernel.sh
