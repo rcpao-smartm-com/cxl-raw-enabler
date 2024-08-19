@@ -60,6 +60,38 @@ $ ls -Fl cxl
 lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/kernel/drivers/cxl-original/
 
 ```
+
+## Make Ubuntu GRUB2 remember the last choice (from https://askubuntu.com/a/149572)
+
+$ sudo nano /etc/default/grub
+# GRUB_DEFAULT=0
+GRUB_DEFAULT=saved
+GRUB_SAVEDEFAULT=true
+# GRUB_TIMEOUT_STYLE=hidden
+# GRUB_TIMEOUT=0
+GRUB_TIMEOUT=60
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
+# GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+GRUB_CMDLINE_LINUX_DEFAULT=""
+# GRUB_CMDLINE_LINUX="mem=32G"
+# GRUB_CMDLINE_LINUX="mem=32G memhp_default_state=offline"
+# GRUB_CMDLINE_LINUX="memhp_default_state=offline"
+# GRUB_CMDLINE_LINUX="iommu=pt"
+# GRUB_CMDLINE_LINUX="efi=nosoftreserve" # AsteraLabs requires this
+# GRUB_CMDLINE_LINUX="efi=nosoftreserve"
+
+$ sudo update-grub
+
+
+## Disable automatic upgrades in Ubuntu
+
+To prevent the mysterious kernel upgrade from 6.5.0 to 6.8.0:
+
+$ sudo apt-get remove unattended-upgrades
+
+If you want to enable them again, replace "remove" with "install".
+
+
 # el9-kernel.sh
 
 el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.9 (main line)
@@ -68,4 +100,4 @@ elrepo9 build with CONFIG_CXL_MEM_RAW_COMMANDS=n.
 
 ---
 # Ignore 
-Ignore the other non-functional scripts in this repository.
+Ignore the other (non-functional) scripts in this repository.
