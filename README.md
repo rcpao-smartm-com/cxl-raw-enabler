@@ -92,11 +92,13 @@ Source: https://askubuntu.com/a/149572
 
 ## Disable automatic upgrades in Ubuntu
 
-To prevent the mysterious kernel upgrade from 6.5.0 to 6.8.0:
+To prevent automatic kernel upgrade from 6.5.0 to 6.8.0:
 
-$ sudo apt-get remove unattended-upgrades
+`sudo apt-get remove unattended-upgrades`
 
-If you want to enable them again, replace "remove" with "install".
+If you want to enable them again:
+
+`sudo apt-get install unattended-upgrades`
 
 Source: https://askubuntu.com/a/1322357
 
