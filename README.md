@@ -66,6 +66,7 @@ is 6.7.6.  Version 6.7.7 and Ubuntu 24.04 kernel version 6.8.0-39 do not.
 
 ## Make Ubuntu GRUB2 remember the last choice
 
+```
 $ sudo nano /etc/default/grub
 # GRUB_DEFAULT=0
 GRUB_DEFAULT=saved
@@ -84,6 +85,7 @@ GRUB_CMDLINE_LINUX_DEFAULT=""
 # GRUB_CMDLINE_LINUX="efi=nosoftreserve"
 
 $ sudo update-grub
+```
 
 Source: https://askubuntu.com/a/149572
 
