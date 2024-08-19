@@ -17,8 +17,8 @@ Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.
 As of 2024-08-07, the latest 22.04.4 kernel is 6.5.0-45, 
 and the latest 24.04 kernel is 6.8.0-39.
 
-Only Ubuntu 22.04.4 and 23.10.1 with kernel 6.5.0 and Ubuntu 24.04 with
-kernel 6.8.0 are working.
+cxl-raw-ubuntu.sh builds correctly with Ubuntu 22.04.4 and 23.10.1 
+with kernel 6.5.0 and Ubuntu 24.04 with kernel 6.8.0.
 
 Copy cxl-raw-ubuntu.sh somewhere under your home directory 
 such as ~/Documents/.
@@ -60,6 +60,9 @@ $ ls -Fl cxl
 lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/kernel/drivers/cxl-original/
 
 ```
+Note: The last Ubuntu 22.04.4 kernel version that works with CXL memory 
+is 6.7.6.  Version 6.7.7 and Ubuntu 24.04 kernel version 6.8.0-39 do not.
+
 
 ## Make Ubuntu GRUB2 remember the last choice (from https://askubuntu.com/a/149572)
 
