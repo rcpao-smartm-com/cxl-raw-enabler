@@ -70,6 +70,16 @@ gcc --version
 # 24.04 daily: gcc-13 (Ubuntu 13.2.0-21ubuntu1) 13.2.0
 
 
+apt-cache search linux-source | tee apt-cache_search_linux-source.txt
+grep ${KVERS} apt-cache_search_linux-source.txt
+if [ $? -gt 0 ]; then
+  echo ""
+  echo "--------------------------------------------------"
+  echo "error: linux-source for ${KVERS} does not exist!"
+  echo "--------------------------------------------------"
+  echo ""
+fi
+
 # ERROR:
 # https://askubuntu.com/a/938955
 # 'apt-get source ...' only gets the _latest_ source:
@@ -137,8 +147,10 @@ else
   # GITTAG=$(git tag -l "Ubuntu-${UNAME_R_2}*")
   # git tag -l "Ubuntu-${UNAME_R_3}*" # UNAME_R_3=${UNAME_R%%-*} # "6.5.0" remove first/greedy "-##-generic"
   # GITTAG=$(git tag -l "Ubuntu-${UNAME_R_3}*")
-  git tag -l "Ubuntu-${KVERS}*" # KVERS=${UNAME_R%-generic} # remove "-generic"
-  GITTAG=$(git tag -l "Ubuntu-${KVERS}.*")
+  # git tag -l "Ubuntu-${KVERS}*" # KVERS=${UNAME_R%-generic} # remove "-generic"
+  # GITTAG=$(git tag -l "Ubuntu-${KVERS}.*")
+    git tag -l "Ubuntu-hwe-*-${KVERS}*" # KVERS=${UNAME_R%-generic} # remove "-generic"
+    GITTAG=$(git tag -l "Ubuntu-hwe-*-${KVERS}.*" | tail -n 1)
   if [ -z "${GITTAG}" ]; then
     # echo "Error: git tag -l \"\${UNAME_R_2}*\" failed."
     # echo "Error: git tag -l \"\${UNAME_R_3}*\" failed."
