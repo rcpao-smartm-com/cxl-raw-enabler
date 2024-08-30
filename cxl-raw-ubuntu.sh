@@ -130,6 +130,11 @@ if [ ${RETVAL} -eq 0 ]; then
     # ./cxl-raw-ubuntu.sh: line 68: cd: too many arguments
     # Manually created folders will confuse 'cd linux-*/'
 else
+
+  if [ ! $(command -v git) ]; then
+    sudo apt-get -y install git
+  fi
+
   # https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide
   if [ ! -d ${VERSION_CODENAME} ]; then
     # git clone --depth 1 --branch <tag_name> <repo_url> # https://stackoverflow.com/a/21699307/1707260
