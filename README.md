@@ -63,6 +63,8 @@ lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/
 Note: The last Ubuntu 22.04.4 kernel version that works with CXL memory 
 is 6.7.6.  Version 6.7.7 and Ubuntu 24.04 kernel version 6.8.0-39 do not.
 
+Note: To (re-)install 6.5.0-28: sudo apt install linux-image-6.5.0-28-generic
+
 
 ## Make Ubuntu GRUB2 remember the last choice
 
