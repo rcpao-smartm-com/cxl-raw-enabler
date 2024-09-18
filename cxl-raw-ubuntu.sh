@@ -100,7 +100,7 @@ fi
 uname -r
 # apt-get source linux-image-unsigned-${UNAME_R}
 apt-get source linux-source-${UNAME_R_3}
-RETVAL=$? # DBG: non-zero will use git clone
+RETVAL=0 # Assume apt-get source works and try to cd into the extracted directory # $? # DBG: non-zero will use git clone
 # https://ubuntuforums.org/showthread.php?t=1758823&p=10822030#post10822030
 # If you really want the older kernel info, you can get it from the
 # Ubuntu Git repository. The tags will allow to you select the exact
@@ -122,15 +122,19 @@ if [ ${RETVAL} -eq 0 ]; then
   fi
   if [ ${RETVAL} -ne 0 ]; then
     echo "Error: Failed to cd into kernel source directory."
-    exit 1
+    echo "Fall through and attempt to use 'git clone . . .'"
+    # exit 1
   fi
   # LS_D_LINUX=$(ls -d linux-*/) 
   # cd ${LS_D_LINUX}
     # + cd linux-hwe-6.5-6.5.0/ linux-hwe-6.5-6.5.0-26/
     # ./cxl-raw-ubuntu.sh: line 68: cd: too many arguments
     # Manually created folders will confuse 'cd linux-*/'
-else
 
+fi # else
+
+if [ ${RETVAL} -ne 0 ]; then
+  # Attempt 'git clone . . .'
   if [ ! $(command -v git) ]; then
     sudo apt-get -y install git
   fi
@@ -168,7 +172,9 @@ else
     echo "Error: git checkout failed."
     exit 1
   fi
+
 fi
+
 
 pwd
 
