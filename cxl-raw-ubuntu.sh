@@ -136,9 +136,22 @@ if [ ${RETVAL} -eq 0 ]; then
 
 fi # else
 
-exit 1 # DBG
+
+# exit 1 # DBG
+
 
 if [ ${RETVAL} -ne 0 ]; then
+
+  # https://stackoverflow.com/a/226724
+  while true; do
+    read -p "apt source failed.  Do you wish to git clone? " yn
+    case $yn in
+      [Yy]* ) break;;
+      [Nn]* ) exit 2;;
+      * ) echo "Please enter y or n.";;
+    esac
+  done
+
   # Attempt 'git clone . . .'
   if [ ! $(command -v git) ]; then
     sudo apt-get -y install git
@@ -379,9 +392,24 @@ sudo cp $SCRIPTSPEC $DSTDIR2/
 ls -lR $DSTDIR2/cxl*
 
 
+echo "WARNING: rmmod cxl drivers which are in-use, may hang the system."
+echo "         $DSTDIR2/cxl-raw.sh will be run to install cxl raw enabled drivers."
+echo "         cxl raw enabled drivers will be used when this kernel is restarted."
+
+# while true; do
+#   echo "WARNING: rmmod cxl drivers which are in-use, may hang the system."
+#   echo "         rmmod cxl drivers from a fresh booted system has a higher chance of working."
+#   read -p "Do you wish to rmmod current cxl drivers, enable raw, and insmod? " yn
+#   case $yn in
+#     [Yy]* ) break;;
+#     [Nn]* ) exit 3;;
+#     * ) echo "Please answer y or n.";;
+#   esac
+# done
+
 # bash -x $DSTDIR2/cxl-lsmod.sh
+#bash -x $DSTDIR2/cxl-rmmod.sh # remove existing cxl driver modules
 bash -x $DSTDIR2/cxl-raw.sh # replace original cxl driver modules with raw enabled ones
-bash -x $DSTDIR2/cxl-rmmod.sh # remove existing cxl driver modules
 # bash -x $DSTDIR2/cxl-lsmod.sh
-bash -x $DSTDIR2/cxl-insmod.sh # insert existing cxl driver modules
-bash -x $DSTDIR2/cxl-lsmod.sh
+#bash -x $DSTDIR2/cxl-insmod.sh # insert existing cxl driver modules
+#bash -x $DSTDIR2/cxl-lsmod.sh
