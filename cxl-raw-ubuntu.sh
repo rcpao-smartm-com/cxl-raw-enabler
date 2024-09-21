@@ -108,7 +108,7 @@ RETVAL=0 # Assume apt-get source works and try to cd into the extracted director
 #RETVAL=-1 # force using git instead of 'apt source'
 if [ ${RETVAL} -eq 0 ]; then
   # [ -f linux-hwe-6.5_6.5.0.orig.tar.gz ] && tar -xvf linux-hwe-6.5_6.5.0.orig.tar.gz && mv linux-6.5 linux-hwe-6.5-6.5.0
-  [ -f linux-hwe-${UNAME_R_2}-${UNAME_R_3}.orig.tar.gz ] && tar -xvf linux-hwe-${UNAME_R_2}-${UNAME_R_3}.orig.tar.gz && mv linux-${UNAME_R_2} linux-hwe-6.5-${UNAME_R_3}
+  [ -f linux-hwe-${UNAME_R_2}_${UNAME_R_3}.orig.tar.gz ] && tar -xvf linux-hwe-${UNAME_R_2}_${UNAME_R_3}.orig.tar.gz && mv linux-${UNAME_R_2} linux-hwe-6.5-${UNAME_R_3}
   # ToDo patch linux-hwe-6.5_6.5.0-27.28~22.04.1.diff.gz or $(uname -r) equivalent, except Ubuntu probably wouldn't patch the cxl driver sources.
   cd linux-hwe-${UNAME_R_2}-${UNAME_R_3} # "linux-hwe-6.5-6.5.0"
   RETVAL=$? # 0=cd success, contrary to 'man bash cd' true=success
