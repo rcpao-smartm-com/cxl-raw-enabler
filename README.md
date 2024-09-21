@@ -18,7 +18,8 @@ Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.
 2024-08-28: 22.04.4 and 24.04 kernel = 6.8.0-40
 
 cxl-raw-ubuntu.sh builds correctly in Ubuntu 22.04.4 
-with kernel 6.5.0 and 6.8.0, in Ubuntu 24.04 with kernel 6.8.0.
+with kernel 6.5.0 (apt source and git)and 6.8.0 (git only), 
+in Ubuntu 24.04 with kernel 6.8.0 (apt source and git).
 
 Copy cxl-raw-ubuntu.sh somewhere under your home directory 
 such as ~/Documents/.
