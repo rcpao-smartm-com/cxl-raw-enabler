@@ -1,13 +1,18 @@
 #!/bin/bash -x
 
 
+# WARNING: git repo does not tag kernel versions and the branches do not match any specific kernel versions.
+#          The sources to build the kernel version you want may be difficult to find / acquire.
+
 # $UNAME_R is the currently running kernel or the kernel you wish to build
 # UNAME_R=6.8.7-100.fc38.x86_64
 # UNAME_R=6.8.7-200.fc39.x86_64
 # UNAME_R=6.8.7-300.fc40.x86_64
-UNAME_R=$(uname -r) # 6.11.3-200.fc40.x86_64
-UNAME_R_NO_DASH=${UNAME_R%-*} # 6.11.3
-UNAME_R_NO_ARCH=${UNAME_R%.x86_64} # 6.11.3-200.fc40
+UNAME_R=$(uname -r) # 6.11.5-200.local.fc40.x86_64
+BUILDID=".local"
+UNAME_R=${UNAME_R//"$BUILDID"/} # 6.11.5-200.fc40.x86_64
+UNAME_R_NO_DASH=${UNAME_R%-*} # 6.11.5
+UNAME_R_NO_ARCH=${UNAME_R%.x86_64} # 6.11.5-200.fc40
 UNAME_R_NO_FC_ARCH=${UNAME_R%.fc*} # 6.11.3-200
 UNAME_R_FC_ARCH=${UNAME_R#*.*.*-*.} # fc40.x86_64
 
@@ -43,19 +48,18 @@ source /etc/os-release
 
 sudo dnf -y install fedpkg fedora-packager rpmdevtools ncurses-devel pesign grubby
 fedpkg clone -a kernel # -a = anonymous
-cd kernel/
+pushd kernel/
 git checkout --track remotes/origin/f$VERSION_ID
 # WARNING: git repo does not tag kernel versions and the branches do not match any specific kernel versions
 # Fedora is similar to Ubuntu in this respect.
 
+# Modify kernel version, append .local
 ls -l kernel.spec
 [ ! -f kernel.spec.original ] && cp kernel.spec kernel.spec.original
-BUILDID=".local"
 # sed -e 's/^# define buildid .local/%define buildid .local/' kernel.spec > kernel.spec.local
 sed -e "s/^# define buildid .local/%define buildid ${BUILDID}/" kernel.spec > kernel.spec.local
 cp kernel.spec.local kernel.spec
 
-# Modify kernel version, append .local
 sudo dnf -y builddep kernel.spec
 sudo dnf -y install rustfmt
 
@@ -64,13 +68,45 @@ sudo grep $USER /etc/pesign/users
 [ $? -ne 0 ] && sudo sh -c "echo $USER >> /etc/pesign/users" && sudo /usr/libexec/pesign/pesign-authorize
 
 
-# Build!
-#time fedpkg local
-
-
-# UNAME_BUILDID="${UNAME_R_NO_FC_ARCH}${BUILDID}.${UNAME_R_FC_ARCH}"
-UNAME_BUILDID=6.11.5-200.local.fc40.x86_64
+UNAME_BUILDID="${UNAME_R_NO_FC_ARCH}${BUILDID}.${UNAME_R_FC_ARCH}"
+# UNAME_BUILDID=6.11.5-200.local.fc40.x86_64
+# /home/smart/Documents/job/sgh/depot-git/cxl-raw-enabler/kernel/kernel-6.11.5/linux-6.11.5-200.local.fc40.x86_64/.config
 pwd
+ls
+pushd kernel-${UNAME_R_NO_DASH}/linux-${UNAME_BUILDID}/
+: '
+  cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment to 6.5.13?
+  # yes "" | make oldconfig # https://serverfault.com/a/116317/221343
+  make olddefconfig # https://serverfault.com/a/538150/221343
+  # make menuconfig # This is the text based menu config 
+  # make xconfig # This is the GUI based menu config 
+  #
+  # Enable CONFIG_CXL_MEM_RAW_COMMANDS=y
+  # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
+  #   [*] RAW Command Interface for Memory Devices (default=[_])
+  #
+  sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
+  mv .config.cxl_raw_y .config 
+  #
+  sed -e 's/# CONFIG_CXL_REGION_INVALIDATION_TEST is not set/CONFIG_CXL_REGION_INVALIDATION_TEST=y/' < .config > .config.cxl_rit_y
+  mv .config.cxl_rit_y .config 
+  #
+  # cp .config /home/rcpao/rpmbuild/SOURCES/kernel-x86_64.config
+  #
+  diff /boot/config-${UNAME_R} .config
+  grep CONFIG_CXL_MEM_RAW_COMMANDS .config
+  # CONFIG_CXL_MEM_RAW_COMMANDS=y
+'
+  echo "CONFIG_CXL_MEM_RAW_COMMANDS=y" > kernel-local
+  echo "CONFIG_CXL_REGION_INVALIDATION_TEST=y" >> kernel-local
+popd
+
+
+# Build!
+time fedpkg local
+
+
+pwd # kernel
 ls ./x86_64/
 ls -l \
    ./x86_64/kernel-modules-core-${UNAME_BUILDID}.rpm \
@@ -85,6 +121,10 @@ sudo dnf -y install --nogpgcheck \
 
 # uninstall after booting into a different kernel
 # sudo dnf -y remove kernel-core-${UNAME_BUILDID} 
+
+
+popd # kernel
+
 
 exit 0
 
@@ -360,16 +400,17 @@ pushd ~/rpmbuild/BUILD/linux-6.8/
 
 
   # -j 4 works. -j runs out of memory with 2GB, 3GB, and 4GB memory
+  MAKEJOBS=8
 
-  # make -j 4
-  # make -j 4 modules
-  #make -j 4 V=1 modules # V=1 verbose
+  # make -j ${MAKEJOBS}
+  # make -j ${MAKEJOBS} modules
+  #make -j ${MAKEJOBS} V=1 modules # V=1 verbose
   # sudo make install
   # sudo make modules_install
 
   make modules_prepare
-  # make -j 4 -C $PWD M=$PWD/drivers/cxl clean
-  #make -j 4 -C $PWD M=$PWD/drivers/cxl 
+  # make -j ${MAKEJOBS} -C $PWD M=$PWD/drivers/cxl clean
+  #make -j ${MAKEJOBS} -C $PWD M=$PWD/drivers/cxl 
   make -C $PWD M=$PWD/drivers/cxl/core
   make -C $PWD M=$PWD/drivers/cxl 
 
