@@ -5,9 +5,11 @@
 # UNAME_R=6.8.7-100.fc38.x86_64
 # UNAME_R=6.8.7-200.fc39.x86_64
 # UNAME_R=6.8.7-300.fc40.x86_64
-UNAME_R=$(uname -r)
-UNAME_R_NO_DASH=${UNAME_R%-*} # 6.8.7
-UNAME_R_NO_MACHINE=${UNAME_R%.x86_64} # 6.8.7-300.fc40
+UNAME_R=$(uname -r) # 6.11.3-200.fc40.x86_64
+UNAME_R_NO_DASH=${UNAME_R%-*} # 6.11.3
+UNAME_R_NO_ARCH=${UNAME_R%.x86_64} # 6.11.3-200.fc40
+UNAME_R_NO_FC_ARCH=${UNAME_R%.fc*} # 6.11.3-200
+UNAME_R_FC_ARCH=${UNAME_R#*.*.*-*.} # fc40.x86_64
 
 
 source /etc/os-release
@@ -35,8 +37,59 @@ source /etc/os-release
 # VARIANT_ID=workstation
 
 
-# https://fedoraproject.org/wiki/Building_a_custom_kernel/Source_RPM
+# https://www.faschingbauer.me/trainings/material/soup/kernel/fedora-kernel-build/screenplay.html#building-from-the-rpm-source
+# https://fedoraproject.org/wiki/Building_a_custom_kernel#Building_a_Kernel_from_the_Fedora_source_tree
 
+
+sudo dnf -y install fedpkg fedora-packager rpmdevtools ncurses-devel pesign grubby
+fedpkg clone -a kernel # -a = anonymous
+cd kernel/
+git checkout --track remotes/origin/f$VERSION_ID
+# WARNING: git repo does not tag kernel versions and the branches do not match any specific kernel versions
+# Fedora is similar to Ubuntu in this respect.
+
+ls -l kernel.spec
+[ ! -f kernel.spec.original ] && cp kernel.spec kernel.spec.original
+BUILDID=".local"
+# sed -e 's/^# define buildid .local/%define buildid .local/' kernel.spec > kernel.spec.local
+sed -e "s/^# define buildid .local/%define buildid ${BUILDID}/" kernel.spec > kernel.spec.local
+cp kernel.spec.local kernel.spec
+
+# Modify kernel version, append .local
+sudo dnf -y builddep kernel.spec
+sudo dnf -y install rustfmt
+
+# Add $USER to /etc/pesign/users
+sudo grep $USER /etc/pesign/users 
+[ $? -ne 0 ] && sudo sh -c "echo $USER >> /etc/pesign/users" && sudo /usr/libexec/pesign/pesign-authorize
+
+
+# Build!
+#time fedpkg local
+
+
+# UNAME_BUILDID="${UNAME_R_NO_FC_ARCH}${BUILDID}.${UNAME_R_FC_ARCH}"
+UNAME_BUILDID=6.11.5-200.local.fc40.x86_64
+pwd
+ls ./x86_64/
+ls -l \
+   ./x86_64/kernel-modules-core-${UNAME_BUILDID}.rpm \
+   ./x86_64/kernel-core-${UNAME_BUILDID}.rpm \
+   ./x86_64/kernel-modules-${UNAME_BUILDID}.rpm \
+   ./x86_64/kernel-${UNAME_BUILDID}.rpm
+sudo dnf -y install --nogpgcheck \
+   ./x86_64/kernel-modules-core-${UNAME_BUILDID}.rpm \
+   ./x86_64/kernel-core-${UNAME_BUILDID}.rpm \
+   ./x86_64/kernel-modules-${UNAME_BUILDID}.rpm \
+   ./x86_64/kernel-${UNAME_BUILDID}.rpm
+
+# uninstall after booting into a different kernel
+# sudo dnf -y remove kernel-core-${UNAME_BUILDID} 
+
+exit 0
+
+
+# https://fedoraproject.org/wiki/Building_a_custom_kernel/Source_RPM
 # https://fedoraproject.org/wiki/Building_a_custom_kernel/Source_RPM#Get_the_Source
 rpmdev-setuptree
 
@@ -53,7 +106,7 @@ sudo /usr/libexec/pesign/pesign-authorize
 
 # koji download-build --arch=src kernel-<version>
 koji download-build --arch=src kernel-$UNAME_R
-rpm -Uvh kernel-${UNAME_R_NO_MACHINE}.src.rpm
+rpm -Uvh kernel-${UNAME_R_NO_ARCH}.src.rpm
 # RPM contents extracted to ${HOME}/rpmbuild/{SOURCES,SPECS}
 
 : ' # comment
