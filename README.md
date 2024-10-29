@@ -1,6 +1,6 @@
 # cxl-raw-enabler
 
-http://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler
+https://github.com/rcpao-smartm-com/cxl-raw-enabler
 
 ## cxl-raw-ubuntu.sh
 
@@ -140,6 +140,6 @@ el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.9 (main line)
 in elrepo9 RPM systems such as RedHat9, AlmaLinux9, RockyLinux9, etc.
 elrepo9 build with CONFIG_CXL_MEM_RAW_COMMANDS=n.
 
----
+
 ## Ignore 
 Ignore the other (non-functional) scripts in this repository.
