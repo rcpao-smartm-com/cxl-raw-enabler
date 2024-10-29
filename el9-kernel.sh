@@ -1,6 +1,9 @@
 #!/bin/bash
 
 
+# ToDo: See Tags in https://github.com/openela-main/kernel
+
+
 # script el9-kernel_$(date +%Y%m%d-%H%M%S)_$(hostname)_$(uname -r).txt
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 LOGFILE=el9-kernel_${TIMESTAMP}_$(hostname)_$(uname -r).txt
