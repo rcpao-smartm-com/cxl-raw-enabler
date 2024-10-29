@@ -65,6 +65,7 @@ lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/
 ```
 Note: The last Ubuntu 22.04.4 kernel version that works with CXL memory 
 is 6.7.6.  Version 6.7.7 and Ubuntu 24.04 kernel version 6.8.0-39 do not.
+[This statement may not be strictly true any longer.]
 
 Note: To (re-)install 6.5.0-28: sudo apt install linux-image-6.5.0-28-generic
 
@@ -124,11 +125,11 @@ Unfortunately, it is not possible to checkout the source code of the
 currently running kernel version. [If you figure out how, please let me
 know, and I will modify this script!]
 
-The script enables the following:
+This script enables the following:
 CONFIG_CXL_MEM_RAW_COMMANDS=y
 CONFIG_CXL_REGION_INVALIDATION_TEST=y
 
-The script will build and install the new kernel RPMs.
+This script will build and install the new kernel RPMs.
 
 On reboot, select the new kernel in GRUB, "6.11.5-200.local.fc40.x86_64"
 for example.
@@ -139,6 +140,9 @@ for example.
 el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.9 (main line)
 in elrepo9 RPM systems such as RedHat9, AlmaLinux9, RockyLinux9, etc.
 elrepo9 build with CONFIG_CXL_MEM_RAW_COMMANDS=n.
+
+This script does not get the source code of the el9 kernel to be able to
+enable CONFIG_CXL_MEM_RAW_COMMANDS.
 
 
 ## Ignore 
