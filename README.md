@@ -2,6 +2,8 @@
 
 http://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler
 
+## cxl-raw-ubuntu.sh
+
 The bash script, cxl-raw-ubuntu.sh, gets the source code for 
 the currently running kernel, enables CONFIG_CXL_MEM_RAW_COMMANDS=y, 
 and creates bash scripts in 
@@ -67,7 +69,7 @@ is 6.7.6.  Version 6.7.7 and Ubuntu 24.04 kernel version 6.8.0-39 do not.
 Note: To (re-)install 6.5.0-28: sudo apt install linux-image-6.5.0-28-generic
 
 
-## Make Ubuntu GRUB2 remember the last choice
+### Make Ubuntu GRUB2 remember the last choice
 
 ```
 $ sudo nano /etc/default/grub
@@ -93,7 +95,7 @@ $ sudo update-grub
 Source: https://askubuntu.com/a/149572
 
 
-## Disable automatic upgrades in Ubuntu
+### Disable automatic upgrades in Ubuntu
 
 To disable automatic software and kernel upgrades:
 
@@ -106,12 +108,38 @@ To enable them again:
 Source: https://askubuntu.com/a/1322357
 
 
-# el9-kernel.sh
+## cxl-raw-fedora.sh
+
+cxl-raw-fedora.sh gets the latest kernel source code:
+```
+/etc/os-release/$NAME="Fedora Linux"
+/etc/os-release/$VERSION_ID=40
+
+$ fedpkg clone -a kernel # -a = anonymous
+$ pushd kernel/
+$ git checkout --track remotes/origin/f$VERSION_ID
+```
+
+Unfortunately, it is not possible to checkout the source code of the
+currently running kernel version. [If you figure out how, please let me
+know, and I will modify this script!]
+
+The script enables the following:
+CONFIG_CXL_MEM_RAW_COMMANDS=y
+CONFIG_CXL_REGION_INVALIDATION_TEST=y
+
+The script will build and install the new kernel RPMs.
+
+On reboot, select the new kernel in GRUB, "6.11.5-200.local.fc40.x86_64"
+for example.
+
+
+## el9-kernel.sh
 
 el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.9 (main line)
 in elrepo9 RPM systems such as RedHat9, AlmaLinux9, RockyLinux9, etc.
 elrepo9 build with CONFIG_CXL_MEM_RAW_COMMANDS=n.
 
 ---
-# Ignore 
+## Ignore 
 Ignore the other (non-functional) scripts in this repository.
