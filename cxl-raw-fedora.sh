@@ -399,8 +399,10 @@ pushd ~/rpmbuild/BUILD/linux-6.8/
   sudo ln -sf /sys/kernel/btf/vmlinux .
 
 
-  # -j 4 works. -j runs out of memory with 2GB, 3GB, and 4GB memory
-  MAKEJOBS=8
+  # -j 4 and -j 8 (nproc = 32) both take about 1 hour to build in my
+  # system. -j (without specifying the number of jobs) runs out of memory
+  # with 2GB, 3GB, and 4GB memory
+  MAKEJOBS=4
 
   # make -j ${MAKEJOBS}
   # make -j ${MAKEJOBS} modules
