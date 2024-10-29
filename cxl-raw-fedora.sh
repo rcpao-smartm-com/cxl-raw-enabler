@@ -119,8 +119,8 @@ sudo dnf -y install --nogpgcheck \
    ./x86_64/kernel-modules-${UNAME_BUILDID}.rpm \
    ./x86_64/kernel-${UNAME_BUILDID}.rpm
 
-# uninstall after booting into a different kernel
-# sudo dnf -y remove kernel-core-${UNAME_BUILDID} 
+echo "To uninstall after booting into a different kernel (untested):"
+echo "sudo dnf -y remove kernel-core-${UNAME_BUILDID}"
 
 
 popd # kernel
