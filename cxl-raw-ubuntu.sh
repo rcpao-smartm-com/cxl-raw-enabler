@@ -160,7 +160,8 @@ if [ ${RETVAL} -ne 0 ]; then
   # https://wiki.ubuntu.com/Kernel/Dev/KernelGitGuide
   if [ ! -d ${VERSION_CODENAME} ]; then
     # git clone --depth 1 --branch <tag_name> <repo_url> # https://stackoverflow.com/a/21699307/1707260
-    git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
+    # git clone git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME} # blocked by IT from Engr & Test
+    git clone https://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/${VERSION_CODENAME}
     RETVAL=$? # DBG: non-zero is fatal
     if [ ${RETVAL} -ne 0 ]; then
       echo "Error: git clone failed."
