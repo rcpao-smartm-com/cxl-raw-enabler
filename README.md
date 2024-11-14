@@ -87,7 +87,7 @@ GRUB_CMDLINE_LINUX_DEFAULT=""
 # GRUB_CMDLINE_LINUX="mem=32G memhp_default_state=offline"
 # GRUB_CMDLINE_LINUX="memhp_default_state=offline"
 # GRUB_CMDLINE_LINUX="iommu=pt"
-# GRUB_CMDLINE_LINUX="efi=nosoftreserve" # AsteraLabs requires this
+# GRUB_CMDLINE_LINUX="efi=nosoftreserve" # 8-DIMM requires this?
 # GRUB_CMDLINE_LINUX="efi=nosoftreserve"
 
 $ sudo update-grub
