@@ -145,5 +145,13 @@ This script does not get the source code of the el9 kernel to be able to
 enable CONFIG_CXL_MEM_RAW_COMMANDS.
 
 
+## World readable /dev/cxl/mem0
+
+sudo -s
+echo 'KERNEL=="mem*", MODE="0777"' > /etc/udev/rules.d/10-local.rules
+udevadm control --reload-rules
+udevadm trigger /dev/cxl/mem0
+
+
 ## Ignore 
 Ignore the other (non-functional) scripts in this repository.
