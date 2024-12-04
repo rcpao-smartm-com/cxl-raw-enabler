@@ -49,7 +49,7 @@ source /etc/os-release
 sudo dnf -y install fedpkg fedora-packager rpmdevtools ncurses-devel pesign grubby
 
 [ -d kernel/ ] && rm -rf kernel/
-# git config --global core.compression 0
+git config --global core.compression 0
 fedpkg clone -a kernel # -a = anonymous
 
 [ ! -d kernel/ ] && echo "Error: kernel/ does not exist" && exit 1
