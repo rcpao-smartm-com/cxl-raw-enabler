@@ -68,7 +68,7 @@ KERNEL_BRANCH=$1 # "lt" or "ml"
 if [[ "$KERNEL_BRANCH"  !=  "lt" && ( "$KERNEL_BRANCH"  !=  "ml" ) ]]; then
   # https://stackoverflow.com/a/226724
   while true; do
-    read -p "Install which kernel [l]ongterm 6.1 / [m]ainline 6.9)? " LM
+    read -p "Install which kernel [l]ongterm (6.1.119-1.el9.elrepo+) / [m]ainline (6.12.2-1.el9.elrepo+)? " LM
     case $LM in
       [Ll]* ) KERNEL_BRANCH=lt; break;;
       [Mm]* ) KERNEL_BRANCH=ml; break;;
