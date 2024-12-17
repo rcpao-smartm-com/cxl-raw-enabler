@@ -96,6 +96,15 @@ $ sudo update-grub
 Source: https://askubuntu.com/a/149572
 
 
+### World readable /dev/cxl/mem0 in Ubuntu
+
+```
+sudo -s
+echo 'KERNEL=="mem*", MODE="0777"' > /etc/udev/rules.d/10-local.rules
+udevadm control --reload-rules
+udevadm trigger /dev/cxl/mem0
+```
+
 ### Disable automatic upgrades in Ubuntu
 
 To disable automatic software and kernel upgrades:
@@ -135,6 +144,26 @@ On reboot, select the new kernel in GRUB, "6.11.5-200.local.fc40.x86_64"
 for example.
 
 
+### Show the GRUB menu in Fedora
+
+/etc/default/grub:
+GRUB_TIMEOUT=30
+GRUB_DISTRIBUTOR="$(sed 's, release .*$,,g' /etc/system-release)"
+GRUB_DEFAULT=saved
+GRUB_DISABLE_SUBMENU=true
+GRUB_TERMINAL_OUTPUT="console"
+# GRUB_CMDLINE_LINUX="rhgb quiet"
+# GRUB_CMDLINE_LINUX="memhp_default_state=offline"
+GRUB_CMDLINE_LINUX=""
+# GRUB_DISABLE_RECOVERY="true"
+GRUB_ENABLE_BLSCFG=true
+
+# https://unix.stackexchange.com/a/639039/325763
+# sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+# https://discussion.fedoraproject.org/t/how-to-get-grub-menu-to-show/91947/2
+# sudo grub2-editenv - unset menu_auto_hide
+
+
 ## el9-kernel.sh
 
 el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.9 (main line)
@@ -144,15 +173,6 @@ elrepo9 build with CONFIG_CXL_MEM_RAW_COMMANDS=n.
 This script does not get the source code of the el9 kernel to be able to
 enable CONFIG_CXL_MEM_RAW_COMMANDS.
 
-
-## World readable /dev/cxl/mem0
-
-```
-sudo -s
-echo 'KERNEL=="mem*", MODE="0777"' > /etc/udev/rules.d/10-local.rules
-udevadm control --reload-rules
-udevadm trigger /dev/cxl/mem0
-```
 
 
 ## Ignore 
