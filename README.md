@@ -18,6 +18,7 @@ and creates bash scripts in
 Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.
 2024-08-07: 22.04.4 kernel = 6.5.0-45, 24.04 kernel = 6.8.0-39
 2024-08-28: 22.04.4 and 24.04 kernel = 6.8.0-40
+2024-12-16: 22.04.4 and 24.04 kernel = 6.8.0-47
 
 cxl-raw-ubuntu.sh builds correctly in Ubuntu 22.04.4 
 with kernel 6.5.0 (apt source and git)and 6.8.0 (git only), 
@@ -65,9 +66,11 @@ lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/
 ```
 Note: The last Ubuntu 22.04.4 kernel version that works with CXL memory 
 is 6.7.6.  Version 6.7.7 and Ubuntu 24.04 kernel version 6.8.0-39 do not.
-[This statement may not be strictly true any longer.]
+[This statement is not strictly true any longer.]
 
-Note: To (re-)install 6.5.0-28: sudo apt install linux-image-6.5.0-28-generic
+To (re-)install 6.5.0-28: sudo apt install linux-image-6.5.0-28-generic
+
+To install HWE kernel (6.8.0-##-generic) for Ubuntu 22.04: sudo apt install linux-generic-hwe-22.04
 
 
 ### Make Ubuntu GRUB2 remember the last choice
@@ -88,7 +91,6 @@ GRUB_CMDLINE_LINUX_DEFAULT=""
 # GRUB_CMDLINE_LINUX="memhp_default_state=offline"
 # GRUB_CMDLINE_LINUX="iommu=pt"
 # GRUB_CMDLINE_LINUX="efi=nosoftreserve" # 8-DIMM requires this?
-# GRUB_CMDLINE_LINUX="efi=nosoftreserve"
 
 $ sudo update-grub
 ```
@@ -165,6 +167,13 @@ GRUB_ENABLE_BLSCFG=true
 # sudo grub2-editenv - unset menu_auto_hide
 
 ```
+
+### World readable /dev/cxl/mem0 in Fedora
+
+$ ls -al /etc/udev/rules.d/10-local.rules
+-rw-r--r--. 1 root root 28 Nov 19 22:11 /etc/udev/rules.d/10-local.rules
+$ cat /etc/udev/rules.d/10-local.rules
+KERNEL=="mem*", MODE="0777"
 
 
 ## el9-kernel.sh
