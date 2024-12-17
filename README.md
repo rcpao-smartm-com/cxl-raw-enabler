@@ -15,10 +15,10 @@ and creates bash scripts in
 - cxl-insmod.sh - install the cxl modules
 - cxl-rmmod.sh - remove the cxl modules
 
-Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18. 
-2024-08-07: 22.04.4 kernel = 6.5.0-45, 24.04 kernel = 6.8.0-39
-2024-08-28: 22.04.4 and 24.04 kernel = 6.8.0-40 
-2024-12-16: 22.04.4 and 24.04 kernel = 6.8.0-47 
+Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.  
+2024-08-07: 22.04.4 kernel = 6.5.0-45, 24.04 kernel = 6.8.0-39  
+2024-08-28: 22.04.4 and 24.04 kernel = 6.8.0-40  
+2024-12-16: 22.04.4 and 24.04 kernel = 6.8.0-47  
 
 cxl-raw-ubuntu.sh builds correctly in Ubuntu 22.04.4 
 with kernel 6.5.0 (apt source and git)and 6.8.0 (git only), 
@@ -136,9 +136,9 @@ Unfortunately, it is not possible to checkout the source code of the
 currently running kernel version. [If you figure out how, please let me
 know, and I will modify this script!]
 
-This script enables the following: 
-CONFIG_CXL_MEM_RAW_COMMANDS=y 
-CONFIG_CXL_REGION_INVALIDATION_TEST=y 
+This script enables the following:  
+CONFIG_CXL_MEM_RAW_COMMANDS=y  
+CONFIG_CXL_REGION_INVALIDATION_TEST=y  
 
 This script will build and install the new kernel RPMs.
 
