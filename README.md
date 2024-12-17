@@ -170,10 +170,15 @@ GRUB_ENABLE_BLSCFG=true
 
 ### World readable /dev/cxl/mem0 in Fedora
 
+```
+$ echo "KERNEL=="mem*", MODE="0777"" | sudo tee /etc/udev/rules.d/10-local.rules
 $ ls -al /etc/udev/rules.d/10-local.rules
 -rw-r--r--. 1 root root 28 Nov 19 22:11 /etc/udev/rules.d/10-local.rules
 $ cat /etc/udev/rules.d/10-local.rules
 KERNEL=="mem*", MODE="0777"
+$ sudo udevadm control --reload # reload the udev rules
+$ sudo shutdown -r now # reboot for the change to take effect
+```
 
 
 ## el9-kernel.sh
