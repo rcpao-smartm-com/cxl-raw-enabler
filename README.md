@@ -98,7 +98,7 @@ $ sudo update-grub
 Source: https://askubuntu.com/a/149572
 
 
-### World readable /dev/cxl/mem0 in Ubuntu
+### World readable and writable /dev/cxl/mem0 in Ubuntu
 
 ```
 sudo -s
@@ -168,7 +168,7 @@ GRUB_ENABLE_BLSCFG=true
 
 ```
 
-### World readable /dev/cxl/mem0 in Fedora
+### World readable and writable /dev/cxl/mem0 in Fedora
 
 ```
 $ echo "KERNEL=="mem*", MODE="0777"" | sudo tee /etc/udev/rules.d/10-local.rules
