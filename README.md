@@ -165,7 +165,6 @@ GRUB_ENABLE_BLSCFG=true
 # sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 # https://discussion.fedoraproject.org/t/how-to-get-grub-menu-to-show/91947/2
 # sudo grub2-editenv - unset menu_auto_hide
-
 ```
 
 ### World readable and writable /dev/cxl/mem0 in Fedora
