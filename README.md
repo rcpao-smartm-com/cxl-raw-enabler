@@ -147,6 +147,7 @@ for example.
 ### Show the GRUB menu in Fedora
 
 /etc/default/grub:
+```
 GRUB_TIMEOUT=30
 GRUB_DISTRIBUTOR="$(sed 's, release .*$,,g' /etc/system-release)"
 GRUB_DEFAULT=saved
@@ -162,6 +163,8 @@ GRUB_ENABLE_BLSCFG=true
 # sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 # https://discussion.fedoraproject.org/t/how-to-get-grub-menu-to-show/91947/2
 # sudo grub2-editenv - unset menu_auto_hide
+
+```
 
 
 ## el9-kernel.sh
