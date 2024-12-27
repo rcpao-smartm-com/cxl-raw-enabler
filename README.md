@@ -190,6 +190,11 @@ This script does not get the source code of the el9 kernel to be able to
 enable CONFIG_CXL_MEM_RAW_COMMANDS.
 
 
+## cxl-raw-debian.sh
+
+cxl-raw-debian.sh gets and compiles the latest kernel (currently 6.1.0-28-amd64 for debian-12.8.0):
+Linux deb12-8-0-067x 6.1.0-28-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.119-1 (2024-11-22) x86_64 GNU/Linux
+
 
 ## Ignore 
 Ignore the other (non-functional) scripts in this repository.
