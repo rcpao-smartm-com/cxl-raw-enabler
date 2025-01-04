@@ -187,9 +187,11 @@ in elrepo9 RPM systems such as RedHat9, AlmaLinux9, RockyLinux9, etc.
 elrepo9 build with CONFIG_CXL_MEM_RAW_COMMANDS=n.
 
 elrepo.org kernels enable CONFIG_CXL_MEM_RAW_COMMANDS=y starting 2024-12-27:
+
 - kernel-ml-6.12.7-1.el8.elrepo
 - kernel-ml-6.12.7-1.el9.elrepo
 - kernel-lt-6.1.122-1.el9.elrepo 
+
 See https://elrepo.org/bugs/view.php?id=1498
 
 
