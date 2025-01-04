@@ -182,12 +182,15 @@ $ sudo shutdown -r now # reboot for the change to take effect
 
 ## el9-kernel.sh
 
-el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.9 (main line)
+el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.12 (main line)
 in elrepo9 RPM systems such as RedHat9, AlmaLinux9, RockyLinux9, etc.
 elrepo9 build with CONFIG_CXL_MEM_RAW_COMMANDS=n.
 
-This script does not get the source code of the el9 kernel to be able to
-enable CONFIG_CXL_MEM_RAW_COMMANDS.
+elrepo.org kernels enable CONFIG_CXL_MEM_RAW_COMMANDS=y starting 2024-12-27:
+- kernel-ml-6.12.7-1.el8.elrepo
+- kernel-ml-6.12.7-1.el9.elrepo
+- kernel-lt-6.1.122-1.el9.elrepo 
+See https://elrepo.org/bugs/view.php?id=1498
 
 
 ## cxl-raw-debian.sh
