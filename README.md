@@ -165,6 +165,9 @@ GRUB_ENABLE_BLSCFG=true
 # sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 # https://discussion.fedoraproject.org/t/how-to-get-grub-menu-to-show/91947/2
 # sudo grub2-editenv - unset menu_auto_hide
+
+# https://forums.almalinux.org/t/changes-to-etc-default-grub-not-taking-effect/3389 
+# sudo grubby --remove-args="rhgb quiet" --update-kernel=ALL 
 ```
 
 ### World readable and writable /dev/cxl/mem0 in Fedora
