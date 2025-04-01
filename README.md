@@ -82,7 +82,7 @@ GRUB_DEFAULT=saved
 GRUB_SAVEDEFAULT=true
 # GRUB_TIMEOUT_STYLE=hidden
 # GRUB_TIMEOUT=0
-GRUB_TIMEOUT=60
+GRUB_TIMEOUT=30
 GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
 # GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
 GRUB_CMDLINE_LINUX_DEFAULT=""
@@ -153,7 +153,8 @@ for example.
 GRUB_TIMEOUT=30
 GRUB_DISTRIBUTOR="$(sed 's, release .*$,,g' /etc/system-release)"
 GRUB_DEFAULT=saved
-GRUB_DISABLE_SUBMENU=true
+GRUB_SAVEDEFAULT=true
+# GRUB_DISABLE_SUBMENU=true
 GRUB_TERMINAL_OUTPUT="console"
 # GRUB_CMDLINE_LINUX="rhgb quiet"
 # GRUB_CMDLINE_LINUX="memhp_default_state=offline"
@@ -206,3 +207,8 @@ Linux deb12-8-0-067x 6.1.0-28-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.119-1 (202
 
 ## Ignore 
 Ignore the other (non-functional) scripts in this repository.
+
+
+# Non-Volatile Memory Modules
+CONFIG_STRICT_DEVMEM is required.
+"nopat" on the command line is also required.
