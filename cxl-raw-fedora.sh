@@ -1,8 +1,11 @@
 #!/bin/bash -x
 
 
+# DBG : <<'COMMENT'
+
+
 # WARNING: git repo does not tag kernel versions and the branches do not match any specific kernel versions.
-#          The sources to build the kernel version you want may be difficult to find / acquire.
+#          The sources to build the specific kernel version you want may be difficult to find / acquire.
 
 # $UNAME_R is the currently running kernel or the kernel you wish to build
 # UNAME_R=6.8.7-100.fc38.x86_64
@@ -100,11 +103,33 @@ pushd kernel/
      ./x86_64/kernel-core-${KVERSTR}.rpm \
      ./x86_64/kernel-modules-${KVERSTR}.rpm \
      ./x86_64/kernel-${KVERSTR}.rpm
-  sudo dnf -y install --nogpgcheck \
-     ./x86_64/kernel-modules-core-${KVERSTR}.rpm \
-     ./x86_64/kernel-core-${KVERSTR}.rpm \
-     ./x86_64/kernel-modules-${KVERSTR}.rpm \
-     ./x86_64/kernel-${KVERSTR}.rpm
+# DBG COMMENT
+  CMD="sudo dnf -y install --nogpgcheck \
+./x86_64/kernel-modules-core-${KVERSTR}.rpm \
+./x86_64/kernel-core-${KVERSTR}.rpm \
+./x86_64/kernel-modules-${KVERSTR}.rpm \
+./x86_64/kernel-${KVERSTR}.rpm"
+
+  while true; do
+    read -n 1 -p "Press y to install the newly built kernel, or n to skip: " YN
+    case $YN in
+        [y] ) break;;
+        [n] ) break;;
+        * ) echo "Press y or n: ";;
+    esac
+  done
+
+  echo "\$YN=\"$YN\""
+  if [ "$YN" == "y" ]; then
+    #sudo dnf -y install --nogpgcheck \
+    #  ./x86_64/kernel-modules-core-${KVERSTR}.rpm \
+    #  ./x86_64/kernel-core-${KVERSTR}.rpm \
+    #  ./x86_64/kernel-modules-${KVERSTR}.rpm \
+    #  ./x86_64/kernel-${KVERSTR}.rpm
+    $CMD
+  else
+    echo "Skipped: \"$CMD\""
+  fi
 
   echo "To uninstall after booting into a different kernel (untested):"
   echo "sudo dnf -y remove kernel-core-${KVERSTR}"
