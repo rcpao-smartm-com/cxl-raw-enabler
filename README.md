@@ -183,6 +183,19 @@ $ sudo udevadm control --reload # reload the udev rules
 $ sudo shutdown -r now # reboot for the change to take effect
 ```
 
+### Disable automatic kernel removal in Fedora
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=1767904#c1
+
+/etc/dnf/dnf.conf:
+```
+# see `man dnf.conf` for defaults and possible options
+
+[main]
+installonly_limit=0
+```
+Default=3
+
 
 ## el9-kernel.sh
 
