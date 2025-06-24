@@ -185,7 +185,7 @@ $ sudo shutdown -r now # reboot for the change to take effect
 
 ### Disable automatic kernel removal in Fedora
 
-# https://bugzilla.redhat.com/show_bug.cgi?id=1767904#c1
+https://bugzilla.redhat.com/show_bug.cgi?id=1767904#c1
 
 /etc/dnf/dnf.conf:
 ```
@@ -194,7 +194,7 @@ $ sudo shutdown -r now # reboot for the change to take effect
 [main]
 installonly_limit=0
 ```
-Default=3
+Default installonly_limit = 3 when not specified
 
 
 ## el9-kernel.sh
