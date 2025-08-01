@@ -154,17 +154,41 @@ COMMENT
 
   make -j$(nproc)
 
-  sudo make modules_install
-  sudo make install
 
-  sudo grub2-mkconfig -o /boot/grub2/grub.cfg
-
-  sudo make rpm-pkg
+  CMD="sudo make modules_install; \
+sudo make install; \
+sudo grub2-mkconfig -o /boot/grub2/grub.cfg; \
+sudo make rpm-pkg"
   # ToDo install rpms
+
+  while true; do
+    read -n 1 -p "Press y to install the newly built kernel, or n to skip: " YN
+    case $YN in
+        [y] ) break;;
+        [n] ) break;;
+        * ) echo "Press y or n: ";;
+    esac
+  done
+
+  echo "\$YN=\"$YN\""
+  if [ "$YN" == "y" ]; then
+    #sudo dnf -y install --nogpgcheck \
+    #  ./x86_64/kernel-modules-core-${KVERSTR}.rpm \
+    #  ./x86_64/kernel-core-${KVERSTR}.rpm \
+    #  ./x86_64/kernel-modules-${KVERSTR}.rpm \
+    #  ./x86_64/kernel-${KVERSTR}.rpm
+    echo "Running: \"$CMD\""
+    $CMD
+  else
+    echo "Skipped: \"$CMD\""
+  fi
+
 
   # sudo reboot
 
 popd
 
+
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 exit 0
