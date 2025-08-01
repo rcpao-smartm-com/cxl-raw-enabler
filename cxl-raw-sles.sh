@@ -84,6 +84,9 @@ pushd /usr/src/linux/
   scripts/config --disable SYSTEM_TRUSTED_KEYS
   scripts/config --disable SYSTEM_REVOCATION_KEYS
 
+  scripts/config --enable CONFIG_CXL_MEM_RAW_COMMANDS
+  scripts/config --enable CONFIG_CXL_REGION_INVALIDATION_TEST
+
   make mrproper
 
   # [ ! -f .config ] && cp /boot/config-${UNAME_R} .config
@@ -118,7 +121,7 @@ pushd /usr/src/linux/
  
     [ ! -f MOK.key.pem ] && openssl req -new -x509 -newkey rsa:4096 -keyout MOK.key.pem -out MOK.crt.pem -nodes -days 36524 -subj "/CN=cxl-raw-sles.sh Custom Kernel Signing/"
 
-    utilities/prepare-mok-signing.sh # from Copilot AI
+    utilities/prepare-mok-signing-sles.sh # from Copilot AI
 
 : <<'COMMENT'
     file MOK.key.pem 
