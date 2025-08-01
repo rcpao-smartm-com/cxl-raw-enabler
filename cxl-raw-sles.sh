@@ -43,8 +43,17 @@ LOGFILE=cxl-raw-sles_${TIMESTAMP}_$(hostname)_$(uname -r).txt
 
 sudo SUSEConnect --status
 # sudo SUSEConnect -r <your_registration_code>
-sudo SUSEConnect -p sle-module-desktop-applications/15.7/x86_64 -r 95FA7263714A0E84
-sudo SUSEConnect -p sle-module-development-tools/15.7/x86_64
+#sudo SUSEConnect -r 95FA7263714A0E84 # 15.7
+#sudo SUSEConnect -r 24716629f4906d25 # 16beta4 = 16.0; expires Nov 10, 2025
+source sles-registration-key
+sudo SUSEConnect -r $SLES_REGISTRATION_KEY # 16beta4 = 16.0; expires Nov 10, 2025
+
+#sudo SUSEConnect -p sle-module-desktop-applications/15.7/x86_64
+#sudo SUSEConnect -p sle-module-development-tools/15.7/x86_64
+source /etc/os-release
+# sudo SUSEConnect -p sle-module-desktop-applications/$VERSION_ID/x86_64
+# sudo SUSEConnect -p sle-module-development-tools/$VERSION_ID/x86_64
+
 sudo zypper install -y kernel-default-devel gcc make ncurses-devel bc libopenssl-devel dwarves
 sudo zypper install -y -f kernel-source kernel-devel 
 
@@ -102,11 +111,41 @@ pushd /usr/src/linux/
 
 
   mkdir -p certs
-  openssl req -new -x509 -newkey rsa:2048 -keyout certs/signing_key.pem -out certs/signing_key.x509 -days 36500 -nodes -subj "/CN=Dummy Kernel Signing Key/"
-  # pushd /usr/src/linux/certs
-  # ln -sf signing_key.pem .kernel_signing_key.pem
-  ln -sf /usr/src/linux/certs/signing_key.pem /usr/src/linux/.kernel_signing_key.pem
-  # popd
+  cd certs
+    # Generate a new X.509 certificate and private key in PEM format
+    # openssl req -new -x509 -newkey rsa:2048 -keyout certs/signing_key.pem -out certs/signing_key.x509 -nodes -days 36500 \
+    #   -subj "/CN=Custom Kernel Signing/"
+ 
+    [ ! -f MOK.key.pem ] && openssl req -new -x509 -newkey rsa:4096 -keyout MOK.key.pem -out MOK.crt.pem -nodes -days 36524 -subj "/CN=cxl-raw-sles.sh Custom Kernel Signing/"
+
+    utilities/prepare-mok-signing.sh # from Copilot AI
+
+: <<'COMMENT'
+    file MOK.key.pem 
+    cat MOK.key.pem 
+    openssl rsa -in MOK.key.pem -outform PEM -out MOK.key.txt
+    file MOK.key.txt
+    cat MOK.key.txt
+    diff -s MOK.key.pem MOK.key.txt
+
+    file MOK.crt.pem
+    cat MOK.crt.pem
+    openssl x509 -in MOK.crt.pem -outform DER -out MOK.crt.der
+    file MOK.crt.der
+    xxd -g1 MOK.crt.der
+
+    echo "Note: sudo mokutil --import MOK.crt.der" # ToDo: MOK enrollment
+
+    # pushd /usr/src/linux/certs
+    # ln -sf signing_key.pem .kernel_signing_key.pem
+    #[ -L /usr/src/linux/.kernel_signing_key.pem ] && rm /usr/src/linux/.kernel_signing_key.pem
+    #ln -sf /usr/src/linux/certs/MOK.key.pem /usr/src/linux/.kernel_signing_key.pem
+    # ln -sf /usr/src/linux/certs/MOK.key.pem /usr/src/linux/certs/signing_key.x509
+    # popd
+
+COMMENT
+
+  cd ..
 
 
   # make clean
@@ -114,11 +153,14 @@ pushd /usr/src/linux/
   make modules_prepare
 
   make -j$(nproc)
+
   sudo make modules_install
   sudo make install
-  sudo make rpm-pkg
 
   sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+
+  sudo make rpm-pkg
+  # ToDo install rpms
 
   # sudo reboot
 
