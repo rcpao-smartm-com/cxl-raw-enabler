@@ -81,36 +81,31 @@ KVERS=${UNAME_R%-*} # "6.1.0-28" remove "-amd64"
 pushd /usr/src/linux/
   sudo chown -R $USER:users .
 
-  scripts/config --disable SYSTEM_TRUSTED_KEYS
-  scripts/config --disable SYSTEM_REVOCATION_KEYS
-
-  scripts/config --enable CONFIG_CXL_MEM_RAW_COMMANDS
-  scripts/config --enable CONFIG_CXL_REGION_INVALIDATION_TEST
-
   make mrproper
 
   # [ ! -f .config ] && cp /boot/config-${UNAME_R} .config
   cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment?
+
+  #scripts/config --disable CONFIG_MODULE_SIG
+  scripts/config --disable SYSTEM_TRUSTED_KEYS
+  scripts/config --disable SYSTEM_REVOCATION_KEYS
+
+  # Enable CONFIG_CXL_MEM_RAW_COMMANDS=y
+  # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
+  #   [*] RAW Command Interface for Memory Devices (default=[_])
+  # Enable CONFIG_CXL_REGION_INVALIDATION_TEST=y
+  scripts/config --enable CONFIG_CXL_MEM_RAW_COMMANDS
+  scripts/config --enable CONFIG_CXL_REGION_INVALIDATION_TEST
+
   #make oldconfig
   # yes "" | make oldconfig # https://serverfault.com/a/116317/221343
   make olddefconfig # https://serverfault.com/a/538150/221343
   # make menuconfig # This is the text based menu config 
   # make xconfig # This is the GUI based menu config 
 
-  # Enable CONFIG_CXL_MEM_RAW_COMMANDS=y
-  # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
-  #   [*] RAW Command Interface for Memory Devices (default=[_])
-  # Enable CONFIG_CXL_REGION_INVALIDATION_TEST=y
-  #
-  sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
-  mv .config.cxl_raw_y .config 
-  #sed -e 's/# CONFIG_CXL_REGION_INVALIDATION_TEST is not set/CONFIG_CXL_REGION_INVALIDATION_TEST=y/' < .config > .config.cxl_raw_y
-  #mv .config.cxl_raw_y .config 
-  #
   diff /boot/config-${UNAME_R} .config
   grep CONFIG_CXL_MEM_RAW_COMMANDS .config
-  # CONFIG_CXL_MEM_RAW_COMMANDS=y
-  # CONFIG_CXL_REGION_INVALIDATION_TEST=y
+  grep CONFIG_CXL_REGION_INVALIDATION_TEST .config
 
 
   mkdir -p certs
@@ -119,9 +114,11 @@ pushd /usr/src/linux/
     # openssl req -new -x509 -newkey rsa:2048 -keyout certs/signing_key.pem -out certs/signing_key.x509 -nodes -days 36500 \
     #   -subj "/CN=Custom Kernel Signing/"
  
-    [ ! -f MOK.key.pem ] && openssl req -new -x509 -newkey rsa:4096 -keyout MOK.key.pem -out MOK.crt.pem -nodes -days 36524 -subj "/CN=cxl-raw-sles.sh Custom Kernel Signing/"
+    [ ! -f MOK.key.pem ] && efikeygen --dbdir . --nickname "cxl-raw-sles.sh_nickname" --common-name "cxl-raw-sles.sh_Custom_Kernel_Signing" --out-cert mok.crt --out-key mok.key
 
-    utilities/prepare-mok-signing-sles.sh # from Copilot AI
+
+    bash -vx utilities/setup-mok-signing-and-kernel-sles.sh # from Copilot AI
+    # obs by utilities/setup-mok-signing-and-kernel-sles.sh: bash -vx utilities/prepare-mok-signing-sles.sh # from Copilot AI
 
 : <<'COMMENT'
     file MOK.key.pem 
