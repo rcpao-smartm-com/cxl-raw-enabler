@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -vx
 
 
 # script cxl-raw-ubuntu_$(date +%Y%m%d-%H%M%S)_$(hostname)_$(uname -r).txt
@@ -98,8 +98,8 @@ fi
 # dpkg-source: info: applying linux_6.8.0-35.35.diff.gz
 # dpkg-source: info: upstream files that have been modified:
 uname -r
-# apt-get source linux-image-unsigned-${UNAME_R}
-apt-get source linux-source-${UNAME_R_3}
+apt-get source linux-image-unsigned-${UNAME_R} # 6.11.0-25-generic
+# apt-get source linux-source-${UNAME_R_3}
 RETVAL=0 # Assume apt-get source works and try to cd into the extracted directory # $? # DBG: non-zero will use git clone
 # https://ubuntuforums.org/showthread.php?t=1758823&p=10822030#post10822030
 # If you really want the older kernel info, you can get it from the
