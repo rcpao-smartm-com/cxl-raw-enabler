@@ -15,14 +15,9 @@ and creates bash scripts in
 - cxl-insmod.sh - install the cxl modules
 - cxl-rmmod.sh - remove the cxl modules
 
-Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.  
-2024-08-07: 22.04.4 kernel = 6.5.0-45, 24.04 kernel = 6.8.0-39  
-2024-08-28: 22.04.4 and 24.04 kernel = 6.8.0-40  
-2024-12-16: 22.04.4 and 24.04 kernel = 6.8.0-47  
-
-cxl-raw-ubuntu.sh builds correctly in Ubuntu 22.04.4 
-with kernel 6.5.0 (apt source and git)and 6.8.0 (git only), 
-in Ubuntu 24.04 with kernel 6.8.0 (apt source and git).
+I have stopped using Ubuntu 22.04 and will no longer support anything
+before 24.04.
+2025-10-14: 24.04.3 kernel = 6.14.0-32-generic
 
 Copy cxl-raw-ubuntu.sh somewhere under your home directory 
 such as ~/Documents/.
@@ -64,13 +59,10 @@ $ ls -Fl cxl
 lrwxrwxrwx 1 root root 61 Mar 29 16:55 cxl -> /usr/lib/modules/6.5.0-21-generic/kernel/drivers/cxl-original/
 
 ```
-Note: The last Ubuntu 22.04.4 kernel version that works with CXL memory 
-is 6.7.6.  Version 6.7.7 and Ubuntu 24.04 kernel version 6.8.0-39 do not.
-[This statement is not strictly true any longer.]
 
 To (re-)install 6.5.0-28: sudo apt install linux-image-6.5.0-28-generic
 
-To install HWE kernel (6.8.0-##-generic) for Ubuntu 22.04: sudo apt install linux-generic-hwe-22.04
+To install HWE kernel (6.8.0-##-generic) for Ubuntu 24.04: sudo apt install linux-generic-hwe-24.04
 
 
 ### Make Ubuntu GRUB2 remember the last choice

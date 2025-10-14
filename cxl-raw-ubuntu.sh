@@ -6,6 +6,8 @@ TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 LOGFILE=cxl-raw-ubuntu_${TIMESTAMP}_$(hostname)_$(uname -r).txt
 
 
+uname -a
+uname -r
 # $UNAME_R is the currently running kernel or the kernel you wish to build
 # UNAME_R=6.5.0-21-generic
 # UNAME_R=6.5.0-26-generic
@@ -13,10 +15,11 @@ LOGFILE=cxl-raw-ubuntu_${TIMESTAMP}_$(hostname)_$(uname -r).txt
 # UNAME_R=6.5.0-28-generic
 # UNAME_R=linux-hwe-6.5-6.5.0
 # UNAME_R=linux-oem-6.5-6.5.0
+# UNAME_R=6.14.0-32-generic
 UNAME_R=$(uname -r)
-UNAME_R_3=${UNAME_R%%-*} # "6.5.0" remove first/greedy "-##-generic"
-UNAME_R_2=${UNAME_R%.*} # "6.5" remove last ".*"
-KVERS=${UNAME_R%-generic} # "6.5.0-26" remove "-generic"
+UNAME_R_3=${UNAME_R%%-*} # "6.14.0" remove first/greedy "-##-generic"
+UNAME_R_2=${UNAME_R%.*} # "6.14^" remove last ".*"
+KVERS=${UNAME_R%-generic} # "6.14.0-32" remove "-generic"
 
 
 # https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel
@@ -25,6 +28,7 @@ KVERS=${UNAME_R%-generic} # "6.5.0-26" remove "-generic"
 # Enable apt deb-src repositories to get kernel sources
 #
 # One-Line-Style Format
+cat /etc/os-release
 source /etc/os-release
 # VERSION_CODENAME=jammy
 echo Uncomment the following lines from /etc/apt/sources.list
