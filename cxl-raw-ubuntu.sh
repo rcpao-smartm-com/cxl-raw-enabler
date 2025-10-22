@@ -44,7 +44,7 @@ sudo cp -f /tmp/sources.list.2.$$ /etc/apt/sources.list
 
 # DEB822-Style Format in Ubuntu 24.04 daily 2024-03-23 06:41
 if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
-  [ ! -f /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0) ] && sudo cp -f /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0) # make a backup
+  [ ! -f /etc/apt/sources.list.d/ubuntu.sources_before-$(basename $0) ] && sudo cp -f /etc/apt/sources.list.d/ubuntu.sources /root/ubuntu.sources.backup_before_$(basename $0) # make a backup
   echo Replace "Types: deb" with "Types: deb deb-src"
   sed 's|Types: deb$|Types: deb deb-src|' /etc/apt/sources.list.d/ubuntu.sources > /tmp/ubuntu.sources.1.$$
   sudo cp -f /tmp/ubuntu.sources.1.$$ /etc/apt/sources.list.d/ubuntu.sources
@@ -245,6 +245,7 @@ grep CONFIG_CXL_MEM_RAW_COMMANDS .config
 #          You can set KBUILD_MODPOST_WARN=1 to turn errors into warning
 #          if you want to proceed at your own risk.
 #
+[ ! -f /usr/src/linux-headers-${UNAME_R}/Module.symvers ] && echo "error $LINENO: \"/usr/src/linux-headers-${UNAME_R}/Module.symvers\" file not found" && exit $LINENO
 cp /usr/src/linux-headers-${UNAME_R}/Module.symvers .
 
 
@@ -268,9 +269,9 @@ sudo ln -sf /sys/kernel/btf/vmlinux .
 # sudo make install
 #
 # make -j clean
-make modules_prepare
-make -j -C $PWD M=$PWD/drivers/cxl clean
-make -j -C $PWD M=$PWD/drivers/cxl modules
+time make modules_prepare
+time make -j -C $PWD M=$PWD/drivers/cxl clean
+time make -j -C $PWD M=$PWD/drivers/cxl modules
 
 
 # Copy newly built cxl kernel modules to ./cxl-raw-$UNAME_R/
@@ -418,3 +419,6 @@ bash -x $DSTDIR2/cxl-raw.sh # replace original cxl driver modules with raw enabl
 # bash -x $DSTDIR2/cxl-lsmod.sh
 #bash -x $DSTDIR2/cxl-insmod.sh # insert existing cxl driver modules
 #bash -x $DSTDIR2/cxl-lsmod.sh
+
+
+date # Subtract $TIMESTAMP for time to run this script including waiting for user input
