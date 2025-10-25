@@ -15,9 +15,17 @@ and creates bash scripts in
 - cxl-insmod.sh - install the cxl modules
 - cxl-rmmod.sh - remove the cxl modules
 
-I have stopped using Ubuntu 22.04 and will no longer support anything
-before 24.04.
-2025-10-14: 24.04.3 kernel = 6.14.0-32-generic
+Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.  
+2024-08-07: 22.04.4 kernel = 6.5.0-45, 24.04 kernel = 6.8.0-39  
+2024-08-28: 22.04.4 and 24.04 kernel = 6.8.0-40  
+2024-12-16: 22.04.4 and 24.04 kernel = 6.8.0-47  
+
+cxl-raw-ubuntu.sh builds correctly in Ubuntu 22.04.4:
+kernel 6.5.0 (apt source and git)
+kernel 6.8.0 (git only)
+Ubuntu 24.04:
+kernel 6.8.0 (apt source and git)
+kernel 6.14.0
 
 Copy cxl-raw-ubuntu.sh somewhere under your home directory 
 such as ~/Documents/.
@@ -208,6 +216,23 @@ See https://elrepo.org/bugs/view.php?id=1498
 
 cxl-raw-debian.sh gets and compiles the latest kernel (currently 6.1.0-28-amd64 for debian-12.8.0):
 Linux deb12-8-0-067x 6.1.0-28-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.119-1 (2024-11-22) x86_64 GNU/Linux
+
+
+## cxl-raw-sles.sh
+
+rcpao@sles15sp7-06fx:~> cat /etc/os-release 
+NAME="SLES"
+VERSION="15-SP7"
+VERSION_ID="15.7"
+PRETTY_NAME="SUSE Linux Enterprise Server 15 SP7"
+ID="sles"
+ID_LIKE="suse"
+ANSI_COLOR="0;32"
+CPE_NAME="cpe:/o:suse:sles:15:sp7"
+DOCUMENTATION_URL="https://documentation.suse.com/"
+rcpao@sles15sp7-06fx:~> uname -r
+6.4.0-150700.51-default
+rcpao@sles15sp7-06fx:~> 
 
 
 ## Ignore 
