@@ -73,6 +73,8 @@ pushd kernel/
   sudo dnf -y builddep kernel.spec
   sudo dnf -y install rustfmt
 
+  sudo dnf -y install capstone-devel libpfm-devel
+
   # Add $USER to /etc/pesign/users
   sudo grep $USER /etc/pesign/users 
   [ $? -ne 0 ] && sudo sh -c "echo $USER >> /etc/pesign/users" && sudo /usr/libexec/pesign/pesign-authorize
