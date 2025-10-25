@@ -1,6 +1,14 @@
 #!/bin/bash -x
 
 
+# $ rpm -qa kernel-core # list installed kernels
+# kernel-core-6.14.9-200.cxlraw.fc41.x86_64
+# kernel-core-6.15.3-100.cxlraw.fc41.x86_64
+# kernel-core-6.16.9-100.cxlraw.fc41.x86_64
+# kernel-core-6.17.5-100.cxlraw.fc41.x86_64
+# $ sudo dnf remove kernel-core-6.16.9-100.fc41.x86_64 # remove an old kernel
+
+
 # DBG : <<'COMMENT'
 
 
