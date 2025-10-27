@@ -141,6 +141,11 @@ pushd kernel/
     echo "Skipped: \"$CMD\""
   fi
 
+
+  echo ""
+  echo "To list installed kernels:"
+  echo "dnf list installed kernel"
+  echo ""
   echo "To uninstall after booting into a different kernel (untested):"
   echo "sudo dnf -y remove kernel-core-${KVERSTR}"
 
