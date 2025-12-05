@@ -23,11 +23,13 @@ dpkg --list | grep linux-image
 
 # $UNAME_R is the currently running kernel or the kernel you wish to build
 # UNAME_R=6.1.0-28-amd64
+# UNAME_R=6.12.57+deb13-amd64
 # UNAME_R_3=6.1.0
 # UNAME_R_2=6.1
 # KVERS=6.1.0-28
 UNAME_R=$(uname -r)
-UNAME_R_3=${UNAME_R%%-*} # "6.1.0" remove first/greedy "-##-amd64"
+# UNAME_R_3=${UNAME_R%%-*} # "6.1.0" remove first/greedy "-*"
+UNAME_R_3=${UNAME_R%%[-+]*} # "6.1.0" remove first/greedy "-*" or "+*"
 UNAME_R_2=${UNAME_R%.*} # "6.1" remove last ".*"
 KVERS=${UNAME_R%-*} # "6.1.0-28" remove "-amd64"
 
@@ -44,7 +46,7 @@ sudo apt-get -y build-dep linux
 
 apt-get source linux # gets the latest kernel version for this debian release, not the currently running kernel version, and no backports
 
-pushd linux-6.1.119 # linux-${UNAME_R_2}
+pushd linux-${UNAME_R_3}
 
   # [ ! -f .config ] && cp /boot/config-${UNAME_R} .config
                         cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment?
@@ -93,12 +95,22 @@ pushd linux-6.1.119 # linux-${UNAME_R_2}
     # -rw-r--r-- 1 smart smart 816257064 Dec 27 04:22 linux-image-6.1.119-dbg_6.1.119-1_amd64.deb
     # -rw-r--r-- 1 smart smart   1275272 Dec 27 04:20 linux-libc-dev_6.1.119-1_amd64.deb
 
+    # -rw-r--r-- 1 rcpao rcpao      1108 Dec  5 00:10 linux-doc_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao  39296788 Dec  5 00:09 linux-doc-6.12_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao  11195268 Dec  5 00:10 linux-headers-6.12.57+deb13-common_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao   9553336 Dec  5 00:10 linux-headers-6.12.57+deb13-common-rt_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao   2691676 Dec  5 00:10 linux-libc-dev_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao      1100 Dec  5 00:10 linux-source_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao 152599108 Dec  5 00:11 linux-source-6.12_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao   1178620 Dec  5 00:11 linux-support-6.12.57+deb13_6.12.57-1_all.deb
+
   # ? fakeroot debian/rules source
 
 popd
 
 ls -l linux-*.deb
-sudo dpkg -i linux-headers-6.1.119_6.1.119-1_amd64.deb linux-image-6.1.119_6.1.119-1_amd64.deb linux-libc-dev_6.1.119-1_amd64.deb
+sudo dpkg -i linux-headers-${UNAME_R_3}*_${UNAME_R_3}-1_*.deb linux-libc-dev_${UNAME_R_3}-1_*.deb
+[ -f linux-image-6.12.57_6.12.57-1_*.deb ] && sudo dpkg -i linux-image-${UNAME_R_3}_${UNAME_R_3}-1_*.deb 
 
 
 exit 0
