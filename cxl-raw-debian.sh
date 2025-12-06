@@ -33,6 +33,8 @@ UNAME_R_3=${UNAME_R%%[-+]*} # "6.1.0" remove first/greedy "-*" or "+*"
 UNAME_R_2=${UNAME_R%.*} # "6.1" remove last ".*"
 KVERS=${UNAME_R%-*} # "6.1.0-28" remove "-amd64"
 
+KERNELDIR=linux-${UNAME_R_3}
+
 
 # https://www.debian.org/doc/manuals/debian-kernel-handbook/ch-common-tasks.html
 
@@ -49,7 +51,7 @@ apt-get source linux # gets the latest kernel version for this debian release, n
 pushd linux-${UNAME_R_3}
 
   # [ ! -f .config ] && cp /boot/config-${UNAME_R} .config
-                        cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment?
+  #                     cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment?
   # yes "" | make oldconfig # https://serverfault.com/a/116317/221343
   make olddefconfig # https://serverfault.com/a/538150/221343
   # make menuconfig # This is the text based menu config 
@@ -60,15 +62,34 @@ pushd linux-${UNAME_R_3}
   #   [*] RAW Command Interface for Memory Devices (default=[_])
   # Enable CONFIG_CXL_REGION_INVALIDATION_TEST=y
   #
-  sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
-  mv .config.cxl_raw_y .config 
-  #sed -e 's/# CONFIG_CXL_REGION_INVALIDATION_TEST is not set/CONFIG_CXL_REGION_INVALIDATION_TEST=y/' < .config > .config.cxl_raw_y
-  #mv .config.cxl_raw_y .config 
+  # CFG=.config
+  CFG=debian/config/config
+  CFGBAK=${CFG}.bak
+  CFGTMP=${CFG}.tmp
+  [ ! -f ${CFGBAK} ] && cp ${CFG} ${CFGBAK}
+  sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < ${CFG} > ${CFGTMP}
+  mv ${CFGTMP} ${CFG} 
+  #sed -e 's/# CONFIG_CXL_REGION_INVALIDATION_TEST is not set/CONFIG_CXL_REGION_INVALIDATION_TEST=y/' < ${CFG} > ${CFGTMP}
+  #mv ${CFGTMP} ${CFG} 
   #
-  diff /boot/config-${UNAME_R} .config
-  grep CONFIG_CXL_MEM_RAW_COMMANDS .config
+  # diff /boot/config-${UNAME_R} ${CFG}${CFGBAK}
+  diff ${CFG} ${CFGBAK}
+  grep CONFIG_CXL_MEM_RAW_COMMANDS ${CFG}
   # CONFIG_CXL_MEM_RAW_COMMANDS=y
-  # CONFIG_CXL_REGION_INVALIDATION_TEST=y
+  #CONFIG_CXL_REGION_INVALIDATION_TEST=y
+
+  # Debian custom version suffix:
+  Suffix="+cxlraw1"
+  CurrVer=$(head -n 1 debian/changelog)
+  if [[ $CurrVer != *"$Suffix"* ]]; then
+    Char=")"
+    NewVer="${CurrVer%%"${Char}"*}$Suffix$Char${CurrVer#*"$Char"}"
+    echo $NewVer
+    NewVer=
+    sed -i "1s/^/$NewVer\n\n  [ Roger C. Pao ]\n  * CONFIG_CXL_MEM_RAW_COMMANDS=y\n\n -- Roger C. Pao <roger.pao@smartm.com>  $(date +"%a, %d %b %Y %H:%M:%S %z")\n\n/" debian/changelog
+    sed -i "1s/ trixie;/ local;/" debian/changelog
+    head -n 10 debian/changelog
+  fi
 
   make clean
 
@@ -77,6 +98,7 @@ pushd linux-${UNAME_R_3}
     # dpkg-buildpackage: error: dpkg-source -i.git -b . subprocess returned exit status 1
 
   fakeroot debian/rules binary
+
     # $ ls -lF ..
     # drwxr-xr-x 28 smart smart      4096 Dec 27 04:15 linux-6.1.119/
     # -rw-r--r--  1 smart smart   1696788 Nov 22 14:38 linux_6.1.119-1.debian.tar.xz
@@ -95,22 +117,31 @@ pushd linux-${UNAME_R_3}
     # -rw-r--r-- 1 smart smart 816257064 Dec 27 04:22 linux-image-6.1.119-dbg_6.1.119-1_amd64.deb
     # -rw-r--r-- 1 smart smart   1275272 Dec 27 04:20 linux-libc-dev_6.1.119-1_amd64.deb
 
-    # -rw-r--r-- 1 rcpao rcpao      1108 Dec  5 00:10 linux-doc_6.12.57-1_all.deb
-    # -rw-r--r-- 1 rcpao rcpao  39296788 Dec  5 00:09 linux-doc-6.12_6.12.57-1_all.deb
-    # -rw-r--r-- 1 rcpao rcpao  11195268 Dec  5 00:10 linux-headers-6.12.57+deb13-common_6.12.57-1_all.deb
-    # -rw-r--r-- 1 rcpao rcpao   9553336 Dec  5 00:10 linux-headers-6.12.57+deb13-common-rt_6.12.57-1_all.deb
-    # -rw-r--r-- 1 rcpao rcpao   2691676 Dec  5 00:10 linux-libc-dev_6.12.57-1_all.deb
-    # -rw-r--r-- 1 rcpao rcpao      1100 Dec  5 00:10 linux-source_6.12.57-1_all.deb
-    # -rw-r--r-- 1 rcpao rcpao 152599108 Dec  5 00:11 linux-source-6.12_6.12.57-1_all.deb
-    # -rw-r--r-- 1 rcpao rcpao   1178620 Dec  5 00:11 linux-support-6.12.57+deb13_6.12.57-1_all.deb
+    # ls -l linux-*.deb
+    # -rw-r--r-- 1 rcpao rcpao      1108 Dec  5 13:39 linux-doc_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao  39297108 Dec  5 13:39 linux-doc-6.12_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao   9176640 Dec  5 15:39 linux-headers-6.12.57_6.12.57-2_amd64.deb
+    # -rw-r--r-- 1 rcpao rcpao  11195512 Dec  5 13:40 linux-headers-6.12.57+deb13-common_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao   9553336 Dec  5 13:41 linux-headers-6.12.57+deb13-common-rt_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao 109651524 Dec  5 15:39 linux-image-6.12.57_6.12.57-2_amd64.deb
+    # -rw-r--r-- 1 rcpao rcpao 999674448 Dec  5 15:41 linux-image-6.12.57-dbg_6.12.57-2_amd64.deb
+    # -rw-r--r-- 1 rcpao rcpao   2691676 Dec  5 13:39 linux-libc-dev_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao   1395728 Dec  5 15:38 linux-libc-dev_6.12.57-2_amd64.deb
+    # -rw-r--r-- 1 rcpao rcpao      1100 Dec  5 13:40 linux-source_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao 152583840 Dec  5 13:41 linux-source-6.12_6.12.57-1_all.deb
+    # -rw-r--r-- 1 rcpao rcpao   1178620 Dec  5 13:41 linux-support-6.12.57+deb13_6.12.57-1_all.deb
 
   # ? fakeroot debian/rules source
 
 popd
 
-ls -l linux-*.deb
-sudo dpkg -i linux-headers-${UNAME_R_3}*_${UNAME_R_3}-1_*.deb linux-libc-dev_${UNAME_R_3}-1_*.deb
-[ -f linux-image-6.12.57_6.12.57-1_*.deb ] && sudo dpkg -i linux-image-${UNAME_R_3}_${UNAME_R_3}-1_*.deb 
 
+ls -l linux-*.deb
+sudo dpkg -i linux-image-${UNAME_R_3}_${UNAME_R_3}-[1-9]_amd64.deb \
+             linux-headers-${UNAME_R_3}*-common_${UNAME_R_3}-[1-9]_all.deb \
+             linux-libc-dev_${UNAME_R_3}-[1-9]_*.deb
+
+
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 exit 0
