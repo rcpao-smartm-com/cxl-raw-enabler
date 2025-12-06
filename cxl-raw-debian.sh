@@ -97,7 +97,9 @@ pushd linux-${UNAME_R_3}
     # dpkg-source: error: unrepresentable changes to source
     # dpkg-buildpackage: error: dpkg-source -i.git -b . subprocess returned exit status 1
 
-  fakeroot debian/rules binary
+  date
+  time fakeroot debian/rules binary
+  date
 
     # $ ls -lF ..
     # drwxr-xr-x 28 smart smart      4096 Dec 27 04:15 linux-6.1.119/
