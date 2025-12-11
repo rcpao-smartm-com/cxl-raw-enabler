@@ -13,11 +13,11 @@
 # https://elrepo.org/wiki/doku.php?id=start
 
 sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-v2-elrepo.org
-sudo dnf install https://www.elrepo.org/elrepo-release-10.el10.elrepo.noarch.rpm
+sudo dnf install -y https://www.elrepo.org/elrepo-release-10.el10.elrepo.noarch.rpm
 
 # Pick one of -lt or -ml below:
-sudo dnf --enablerepo=elrepo-kernel install kernel-lt # "long term support"
-# sudo dnf --enablerepo=elrepo-kernel install kernel-ml # "mainline stable"
+# sudo dnf --enablerepo=elrepo-kernel install -y kernel-lt # "long term support"
+sudo dnf --enablerepo=elrepo-kernel install -y kernel-ml # "mainline stable"
 
 
 # Prevent Fedora 38+ "The system will suspend now!" by GNOME when only using ssh sessions
