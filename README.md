@@ -122,6 +122,11 @@ Source: https://askubuntu.com/a/1322357
 
 ## cxl-raw-fedora.sh
 
+Fedora 41-43: 
+Installs elrepo kernel-ml.
+
+
+Fedora 38-41:
 cxl-raw-fedora.sh gets the latest kernel source code:
 ```
 /etc/os-release/$NAME="Fedora Linux"
