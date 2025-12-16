@@ -20,10 +20,18 @@ sudo dnf install -y https://www.elrepo.org/elrepo-release-10.el10.elrepo.noarch.
 sudo dnf --enablerepo=elrepo-kernel install -y kernel-ml # "mainline stable"
 
 
-# Prevent Fedora 38+ "The system will suspend now!" by GNOME when only using ssh sessions
+: <<'COMMENT'
+
+# Works in Fedora 43:
+# https://github.com/sigmaSd/Stimulator
+# https://nginx-flathub.apps.openshift.gnome.org/lt/apps/io.github.sigmasd.stimulator
+
+# Fails in Fedora 43:
+# Prevent Fedora 38-41 "The system will suspend now!" by GNOME when only using ssh sessions
 # https://discussion.fedoraproject.org/t/system-suspends/81666/3
 sudo -u gdm dbus-run-session gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type  nothing
 sudo -u gdm dbus-run-session gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type  nothing
+COMMENT
 
 
 echo "You may now reboot to run your newly installed kernel."
