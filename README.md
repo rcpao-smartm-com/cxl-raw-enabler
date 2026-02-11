@@ -214,7 +214,14 @@ elrepo.org kernels enable CONFIG_CXL_MEM_RAW_COMMANDS=y starting 2024-12-27:
 - kernel-ml-6.12.7-1.el9.elrepo
 - kernel-lt-6.1.122-1.el9.elrepo 
 
-See https://elrepo.org/bugs/view.php?id=1498
+See https://elrepo.org/bugs/view.php?id=1498#c10236
+toracat
+2024-12-27 20:37
+administrator   ~0010236
+	The requested config change is now in the kernels released today:
+kernel-ml-6.12.7-1.el9.elrepo
+kernel-ml-6.12.7-1.el8.elrepo
+kernel-lt-6.1.122-1.el9.elrepo 
 
 
 ## cxl-raw-debian.sh
