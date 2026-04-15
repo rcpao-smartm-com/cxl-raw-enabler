@@ -120,6 +120,17 @@ To enable them again:
 Source: https://askubuntu.com/a/1322357
 
 
+## ub24-6.17.0.sh
+
+Ubuntu 24.04.4 mainline kernel 6.17.0 
+
+Run to install mainline kernel 6.17.0.
+Reboot.
+Re-run to compile the cxl-raw kernel drivers.
+Reboot.
+Test cxl raw drivers: e.g. mchip_cxl_cci --sss_get
+
+
 ## cxl-raw-fedora.sh
 
 Fedora 41-43: 
