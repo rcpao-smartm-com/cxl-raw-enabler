@@ -213,6 +213,66 @@ installonly_limit=0
 Default installonly_limit = 3 when not specified
 
 
+### Fedora Server 41-43 Extend 15G / to End of Disk
+
+[rcpao@fs42-067x mchip_cxl_cci-rcpao]$ lsblk
+NAME                                  MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINTS
+zram0                                 251:0    0     8G  0 disk  [SWAP]
+nvme0n1                               259:0    0 838.4G  0 disk
+├─nvme0n1p1                           259:1    0   600M  0 part  /boot/efi
+├─nvme0n1p2                           259:2    0     1G  0 part  /boot
+└─nvme0n1p3                           259:3    0 836.8G  0 part
+  └─luks-36b2d615-b1f5-4b56-8a75-ddc6126d8e74
+    │                                 252:0    0 836.8G  0 crypt
+    └─fedora_ub24d--05dx-root         252:1    0    15G  0 lvm   /
+[rcpao@fs42-067x mchip_cxl_cci-rcpao]$ df -h
+Filesystem                           Size  Used Avail Use% Mounted on
+/dev/mapper/fedora_ub24d--05dx-root   15G  3.2G   12G  21% /
+devtmpfs                             4.0M     0  4.0M   0% /dev
+tmpfs                                 32G     0   32G   0% /dev/shm
+efivarfs                             256K  117K  135K  47% /sys/firmware/efi/efivars
+tmpfs                                 13G  1.8M   13G   1% /run
+tmpfs                                1.0M     0  1.0M   0% /run/credentials/systemd-cryptsetup@luks\x2d36b2d615\x2db1f5\x2d4b56\x2d8a75\x2dddc6126d8e74.service
+tmpfs                                1.0M     0  1.0M   0% /run/credentials/systemd-journald.service
+tmpfs                                 32G     0   32G   0% /tmp
+/dev/nvme0n1p2                       849M  262M  587M  31% /boot
+/dev/nvme0n1p1                       599M  7.5M  592M   2% /boot/efi
+tmpfs                                1.0M     0  1.0M   0% /run/credentials/systemd-resolved.service
+tmpfs                                1.0M     0  1.0M   0% /run/credentials/getty@tty1.service
+tmpfs                                6.3G  4.0K  6.3G   1% /run/user/1000
+[rcpao@fs42-067x mchip_cxl_cci-rcpao]$ sudo vgs
+[sudo] password for rcpao:
+  VG                #PV #LV #SN Attr   VSize    VFree
+  fedora_ub24d-05dx   1   1   0 wz--n- <836.76g <821.76g
+[rcpao@fs42-067x mchip_cxl_cci-rcpao]$ sudo lvs
+  LV   VG                Attr       LSize  Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  root fedora_ub24d-05dx -wi-ao---- 15.00g                                      
+[rcpao@fs42-067x mchip_cxl_cci-rcpao]$
+[rcpao@fs42-067x mchip_cxl_cci-rcpao]$ sudo lvextend -l +100%FREE /dev/mapper/fedora_ub24d--05dx-root
+[sudo] password for rcpao:
+  Size of logical volume fedora_ub24d-05dx/root changed from 15.00 GiB (3840 extents) to <836.76 GiB (214210 extents).
+  Logical volume fedora_ub24d-05dx/root successfully resized.
+[rcpao@fs42-067x mchip_cxl_cci-rcpao]$ df -T / # verify filesystem is xfs
+Filesystem                          Type 1K-blocks    Used Available Use% Mounted on
+/dev/mapper/fedora_ub24d--05dx-root xfs   15523440 3257340  12266100  21% /
+[rcpao@fs42-067x mchip_cxl_cci-rcpao]$ sudo xfs_growfs /
+meta-data=/dev/mapper/fedora_ub24d--05dx-root isize=512    agcount=4, agsize=983040 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=1        finobt=1, sparse=1, rmapbt=1
+         =                       reflink=1    bigtime=1 inobtcount=1 nrext64=1
+         =                       exchange=0
+data     =                       bsize=4096   blocks=3932160, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0, ftype=1, parent=0
+log      =internal log           bsize=4096   blocks=51300, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+data blocks changed from 3932160 to 219351040
+[rcpao@fs42-067x mchip_cxl_cci-rcpao]$
+
+Ref: https://copilot.microsoft.com/chats/Mkxx7FmzoCCkyaAzfBYaF
+
+
 ## el9-kernel.sh
 
 el9-kernel.sh installs kernel 6.1 (long term) or kernel 6.12 (main line)
