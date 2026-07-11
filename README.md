@@ -214,7 +214,7 @@ Default installonly_limit = 3 when not specified
 
 
 ### Fedora Server 41-43 Extend 15G / to End of Disk
-
+```
 [rcpao@fs42-067x mchip_cxl_cci-rcpao]$ lsblk
 NAME                                  MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINTS
 zram0                                 251:0    0     8G  0 disk  [SWAP]
@@ -269,7 +269,7 @@ log      =internal log           bsize=4096   blocks=51300, version=2
 realtime =none                   extsz=4096   blocks=0, rtextents=0
 data blocks changed from 3932160 to 219351040
 [rcpao@fs42-067x mchip_cxl_cci-rcpao]$
-
+```
 Ref: https://copilot.microsoft.com/chats/Mkxx7FmzoCCkyaAzfBYaF
 
 
@@ -302,7 +302,7 @@ Linux deb12-8-0-067x 6.1.0-28-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.119-1 (202
 
 
 ## cxl-raw-sles.sh
-
+```
 rcpao@sles15sp7-06fx:~> cat /etc/os-release 
 NAME="SLES"
 VERSION="15-SP7"
@@ -316,7 +316,7 @@ DOCUMENTATION_URL="https://documentation.suse.com/"
 rcpao@sles15sp7-06fx:~> uname -r
 6.4.0-150700.51-default
 rcpao@sles15sp7-06fx:~> 
-
+```
 
 ## Ignore 
 Ignore the other (non-functional) scripts in this repository.
