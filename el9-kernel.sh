@@ -13,6 +13,7 @@ LOGFILE=el9-kernel_${TIMESTAMP}_$(hostname)_$(uname -r).txt
 # UNAME_R=5.14.0-362.8.1.el9_3.x86_64
 # UNAME_R=5.14.0-362.24.2.el9_3.x86_64
 # UNAME_R=6.8.4-1.el9.elrepo.x86_64
+# UNAME_R=7.1.3-1.el9.elrepo.x86_64
 UNAME_R=$(uname -r)
 UNAME_R_NO_DASH=${UNAME_R%-*}
 
@@ -79,10 +80,21 @@ fi
 
 sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
 sudo dnf -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
-sudo dnf -y --enablerepo=elrepo-kernel install kernel-${KERNEL_BRANCH} kernel-${KERNEL_BRANCH}-devel
-# file /usr/include/asm-generic/bitsperlong.h from install of kernel-ml-headers-6.8.4-1.el9.elrepo.x86_64 conflicts with file from package kernel-headers-5.14.0-362.24.1.el9_3.0.1.x86_64
+sudo dnf -y --enablerepo=elrepo-kernel --refresh upgrade kernel-${KERNEL_BRANCH} kernel-${KERNEL_BRANCH}-devel # upgrade --refresh pulls the latest elrepo metadata and upgrades if a newer kernel is already installed.
+sudo dnf -y --enablerepo=elrepo-kernel install kernel-${KERNEL_BRANCH} kernel-${KERNEL_BRANCH}-devel # A follow-up install covers first-time installs (upgrade alone won't install an absent package).
+
+# File /usr/include/asm-generic/bitsperlong.h from install of
+# kernel-ml-headers-6.8.4-1.el9.elrepo.x86_64 conflicts with file from
+# package kernel-headers-5.14.0-362.24.1.el9_3.0.1.x86_64.
+
 # https://elrepo.org/wiki/doku.php?id=kernel-ml
-# There is no need to install the kernel-ml-headers package. It is only necessary if you intend to rebuild glibc and, thus, the entire operating system. If there is a need to have the kernel headers installed, you should use the current distributed kernel-headers package as that is related to the current version of glibc. When you see a message like “your kernel headers for kernel xxx cannot be found …”, you most likely need the kernel-ml-devel package, not the kernel-ml-headers package
+# There is no need to install the kernel-ml-headers package. It is only
+# necessary if you intend to rebuild glibc and, thus, the entire operating
+# system. If there is a need to have the kernel headers installed, you
+# should use the current distributed kernel-headers package as that is
+# related to the current version of glibc. When you see a message like
+# “your kernel headers for kernel xxx cannot be found …”, you most
+# likely need the kernel-ml-devel package, not the kernel-ml-headers package
 
 
 # echo kernel packages: https://cbs.centos.org/koji/packageinfo?packageID=455
@@ -102,20 +114,10 @@ echo ""
 echo "You must disable Secure Boot to run elrepo kernels as they are unsigned."
 
 
-# /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
-NEW_UNAME_R_BOOT_VMLINUZ=$(sudo grubby --default-kernel) # /boot/vmlinuz-6.8.4-1.el9.elrepo.x86_64
-NEW_UNAME_R=${NEW_UNAME_R_BOOT_VMLINUZ#/boot/vmlinuz-} # 6.8.4-1.el9.elrepo.x86_64
-NEW_UNAME_R_NO_DASH=${NEW_UNAME_R%-*} # 6.8.4
-if [ "$NEW_UNAME_R"  !=  "$UNAME_R" ]; then
+NEW_UNAME_R=$(rpm -q --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' kernel-${KERNEL_BRANCH} 2>/dev/null) # NEW_UNAME_R is set from the installed kernel-${KERNEL_BRANCH} RPM version
+NEW_UNAME_R_NO_DASH=${NEW_UNAME_R%-*}
+if [ -n "$NEW_UNAME_R" ] && [ "$NEW_UNAME_R" != "$UNAME_R" ]; then # If the new kernel version is different from the current kernel version, reboot to the new kernel.
   # https://stackoverflow.com/a/226724
-  # echo "Reboot to the new $NEW_UNAME_R kernel?"
-  # select yn in "Yes" "No"; do
-  #   case $yn in
-  #     Yes ) sudo shutdown -r now; break;;
-  #     No ) break;;
-  #   esac
-  # done
-  #
   while true; do
     read -p "Reboot to the new $NEW_UNAME_R kernel (y/n)? " yn
     case $yn in
