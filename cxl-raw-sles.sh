@@ -3,6 +3,31 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+format_elapsed() {
+  local secs=$1
+  if [ "$secs" -ge 3600 ]; then
+    printf '%dh %dm %ds' $((secs / 3600)) $((secs % 3600 / 60)) $((secs % 60))
+  elif [ "$secs" -ge 60 ]; then
+    printf '%dm %ds' $((secs / 60)) $((secs % 60))
+  else
+    printf '%ds' "$secs"
+  fi
+}
+
+run_timed() {
+  local label="$1"
+  shift
+  local start end secs
+  start=$(date +%s)
+  echo "==> ${label} (started $(date +%H:%M:%S))"
+  "$@"
+  end=$(date +%s)
+  secs=$((end - start))
+  echo "==> ${label}: finished in $(format_elapsed "$secs")"
+}
+
+SCRIPT_START=$(date +%s)
+
 # Allow incoming SSH connections through the firewall
 # sudo firewall-cmd --permanent --add-service=ssh
 # sudo firewall-cmd --reload
@@ -60,9 +85,11 @@ source /etc/os-release
 # sudo SUSEConnect -p sle-module-desktop-applications/$VERSION_ID/x86_64
 # sudo SUSEConnect -p sle-module-development-tools/$VERSION_ID/x86_64
 
-sudo zypper -n install kernel-default-devel gcc make ncurses-devel bc libopenssl-devel dwarves flex bison openssl patch
-sudo zypper -n install -f kernel-devel kernel-default-devel
-sudo zypper -n source-install kernel-source
+run_timed "Install build dependencies (zypper)" bash -c '
+  sudo zypper -n install kernel-default-devel gcc make ncurses-devel bc libopenssl-devel dwarves flex bison openssl patch
+  sudo zypper -n install -f kernel-devel kernel-default-devel
+  sudo zypper -n source-install kernel-source
+'
 
 #git clone https://github.com/openSUSE/kernel-source -b SLE15-SP7
 #cd kernel-source
@@ -101,7 +128,6 @@ prepare_suse_kernel_source() {
   srcversion=${srcversion#linux-}
   linux_tar="${SUSE_SOURCEDIR}/linux-${srcversion}.tar.xz"
 
-  echo "Preparing patched kernel source at ${target} (this may take several minutes)..."
   rm -rf "${prepdir}"
   mkdir -p "${patchdir}" "${prepdir}/extract"
 
@@ -149,9 +175,12 @@ ensure_rpm_build() {
 
 build_kernel_rpms() {
   RPM_OUT="${SCRIPT_DIR}/kernel-rpms-${KVERS}"
+  echo ""
+  echo "Warning: kernel RPM packaging (make binrpm-pkg) typically takes 30-45+ minutes."
+  echo "         rpmbuild may appear idle while it processes the large kernel RPM."
   ensure_rpm_build
-  echo "Building kernel RPMs from ${BUILDDIR} (make binrpm-pkg)..."
-  make -C "$KERNEL_SRC" O="$BUILDDIR" binrpm-pkg
+  run_timed "Build kernel RPMs (make binrpm-pkg)" \
+    make -C "$KERNEL_SRC" O="$BUILDDIR" binrpm-pkg
   mkdir -p "$RPM_OUT"
   shopt -s nullglob
   for rpm in "${HOME}/rpmbuild/RPMS/"*/*.rpm; do
@@ -166,7 +195,7 @@ build_kernel_rpms() {
 }
 
 if [ ! -f "${KERNEL_SRC}/arch/x86/entry/syscalls/syscall_32.tbl" ]; then
-  prepare_suse_kernel_source
+  run_timed "Prepare patched kernel source at /usr/src/linux-${KVERS}" prepare_suse_kernel_source
 fi
 
 if [ ! -f "${KERNEL_SRC}/arch/x86/entry/syscalls/syscall_32.tbl" ]; then
@@ -241,10 +270,9 @@ COMMENT
   popd
 
   # make -C "$KERNEL_SRC" O="$BUILDDIR" clean
-  make -C "$KERNEL_SRC" O="$BUILDDIR" prepare
-  make -C "$KERNEL_SRC" O="$BUILDDIR" modules_prepare
-
-  make -C "$KERNEL_SRC" O="$BUILDDIR" -j$(nproc)
+  run_timed "Kernel build prepare" make -C "$KERNEL_SRC" O="$BUILDDIR" prepare
+  run_timed "Kernel modules_prepare" make -C "$KERNEL_SRC" O="$BUILDDIR" modules_prepare
+  run_timed "Kernel compile (make -j$(nproc))" make -C "$KERNEL_SRC" O="$BUILDDIR" -j"$(nproc)"
 else
   echo "Using existing kernel build in ${BUILDDIR}"
 fi
@@ -260,12 +288,13 @@ done
 
 echo "\$YN=\"$YN\""
 if [ "$YN" == "y" ]; then
-  echo "Installing kernel from ${BUILDDIR}..."
-  install_built_kernel
+  run_timed "Install built kernel (modules + vmlinuz + grub)" install_built_kernel
 else
   echo "Skipped kernel install"
 fi
 
+echo ""
+echo "Note: building kernel RPMs can take 30-45+ minutes on this system."
 while true; do
   read -n 1 -p "Press y to build kernel RPMs for other systems, or n to skip: " YN
   case $YN in
@@ -285,6 +314,7 @@ fi
 
 # sudo reboot
 
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+echo ""
+echo "==> Script total elapsed time: $(format_elapsed "$(( $(date +%s) - SCRIPT_START ))")"
 
 exit 0

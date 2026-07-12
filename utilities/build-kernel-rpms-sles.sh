@@ -10,6 +10,29 @@ KERNEL_SRC="${KERNEL_SRC:-/usr/src/linux}"
 BUILDDIR="${BUILDDIR:-${SCRIPT_DIR}/kernel-build-${KVERS}}"
 RPM_OUT="${RPM_OUT:-${SCRIPT_DIR}/kernel-rpms-${KVERS}}"
 
+format_elapsed() {
+  local secs=$1
+  if [ "$secs" -ge 3600 ]; then
+    printf '%dh %dm %ds' $((secs / 3600)) $((secs % 3600 / 60)) $((secs % 60))
+  elif [ "$secs" -ge 60 ]; then
+    printf '%dm %ds' $((secs / 60)) $((secs % 60))
+  else
+    printf '%ds' "$secs"
+  fi
+}
+
+run_timed() {
+  local label="$1"
+  shift
+  local start end secs
+  start=$(date +%s)
+  echo "==> ${label} (started $(date +%H:%M:%S))"
+  "$@"
+  end=$(date +%s)
+  secs=$((end - start))
+  echo "==> ${label}: finished in $(format_elapsed "$secs")"
+}
+
 source /etc/os-release
 
 ensure_rpm_build() {
@@ -31,8 +54,11 @@ build_kernel_rpms() {
 
   ensure_rpm_build
 
-  echo "Building kernel RPMs from ${BUILDDIR}..."
-  make -C "$KERNEL_SRC" O="$BUILDDIR" binrpm-pkg
+  echo ""
+  echo "Warning: kernel RPM packaging (make binrpm-pkg) typically takes 30-45+ minutes."
+  echo "         rpmbuild may appear idle while it processes the large kernel RPM."
+  run_timed "Build kernel RPMs (make binrpm-pkg)" \
+    make -C "$KERNEL_SRC" O="$BUILDDIR" binrpm-pkg
 
   mkdir -p "$RPM_OUT"
   shopt -s nullglob
