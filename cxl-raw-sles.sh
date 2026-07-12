@@ -1,5 +1,7 @@
 #!/bin/bash -vx
+set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Allow incoming SSH connections through the firewall
 # sudo firewall-cmd --permanent --add-service=ssh
@@ -45,8 +47,12 @@ sudo SUSEConnect --status
 # sudo SUSEConnect -r <your_registration_code>
 #sudo SUSEConnect -r 95FA7263714A0E84 # 15.7
 #sudo SUSEConnect -r 24716629f4906d25 # 16beta4 = 16.0; expires Nov 10, 2025
-source sles-registration-key
-sudo SUSEConnect -r $SLES_REGISTRATION_KEY # 16beta4 = 16.0; expires Nov 10, 2025
+if [ -f "${SCRIPT_DIR}/sles-registration-key" ]; then
+  source "${SCRIPT_DIR}/sles-registration-key"
+  sudo SUSEConnect -r "$SLES_REGISTRATION_KEY"
+else
+  echo "sles-registration-key not found; skipping SUSEConnect -r (using existing registration)"
+fi
 
 #sudo SUSEConnect -p sle-module-desktop-applications/15.7/x86_64
 #sudo SUSEConnect -p sle-module-development-tools/15.7/x86_64
@@ -54,8 +60,9 @@ source /etc/os-release
 # sudo SUSEConnect -p sle-module-desktop-applications/$VERSION_ID/x86_64
 # sudo SUSEConnect -p sle-module-development-tools/$VERSION_ID/x86_64
 
-sudo zypper install -y kernel-default-devel gcc make ncurses-devel bc libopenssl-devel dwarves
-sudo zypper install -y -f kernel-source kernel-devel 
+sudo zypper -n install kernel-default-devel gcc make ncurses-devel bc libopenssl-devel dwarves flex bison openssl patch
+sudo zypper -n install -f kernel-devel kernel-default-devel
+sudo zypper -n source-install kernel-source
 
 #git clone https://github.com/openSUSE/kernel-source -b SLE15-SP7
 #cd kernel-source
@@ -77,52 +84,109 @@ UNAME_R_3=${UNAME_R%%-*} # "6.1.0" remove first/greedy "-##-amd64"
 UNAME_R_2=${UNAME_R%.*} # "6.1" remove last ".*"
 KVERS=${UNAME_R%-*} # "6.1.0-28" remove "-amd64"
 
+KERNEL_SRC=/usr/src/linux
+BUILDDIR="${SCRIPT_DIR}/kernel-build-${KVERS}"
+SUSE_SOURCEDIR=/usr/src/packages/SOURCES
 
-pushd /usr/src/linux/
-  sudo chown -R $USER:users .
+# source-install drops the SRPM into /usr/src/packages; SLES has no installable
+# kernel-source binary RPM. Unpack vanilla sources and apply SUSE patches locally.
+prepare_suse_kernel_source() {
+  local target="/usr/src/linux-${KVERS}"
+  local prepdir="${SCRIPT_DIR}/.suse-kernel-prep"
+  local patchdir="${prepdir}/patchroot"
+  local srcversion
+  local linux_tar
 
-  make mrproper
+  srcversion=$(basename "$(ls -1 "${SUSE_SOURCEDIR}"/linux-*.tar.xz | head -1)" .tar.xz)
+  srcversion=${srcversion#linux-}
+  linux_tar="${SUSE_SOURCEDIR}/linux-${srcversion}.tar.xz"
 
-  # [ ! -f .config ] && cp /boot/config-${UNAME_R} .config
-  cp /boot/config-${UNAME_R} .config # 'make oldconfig' changes kernel version comment?
+  echo "Preparing patched kernel source at ${target} (this may take several minutes)..."
+  rm -rf "${prepdir}"
+  mkdir -p "${patchdir}" "${prepdir}/extract"
+
+  for ball in config.tar.bz2 config.addon.tar.bz2 patches.arch.tar.bz2 patches.drivers.tar.bz2 \
+              patches.fixes.tar.bz2 patches.rpmify.tar.bz2 patches.suse.tar.bz2 patches.addon.tar.bz2 \
+              patches.kernel.org.tar.bz2 patches.apparmor.tar.bz2 patches.rt.tar.bz2 \
+              patches.kabi.tar.bz2 patches.drm.tar.bz2 kabi.tar.bz2 sysctl.tar.bz2; do
+    tar -xjf "${SUSE_SOURCEDIR}/${ball}" -C "${patchdir}"
+  done
+
+  tar -xf "${linux_tar}" -C "${prepdir}/extract"
+  mv "${prepdir}/extract/linux-${srcversion}" "${prepdir}/linux-${KVERS}"
+
+  pushd "${prepdir}/linux-${KVERS}"
+    "${SUSE_SOURCEDIR}/apply-patches" "${SUSE_SOURCEDIR}/series.conf" "${patchdir}"
+  popd
+
+  sudo rm -rf "${target}"
+  sudo mv "${prepdir}/linux-${KVERS}" "${target}"
+  sudo ln -sfn "linux-${KVERS}" /usr/src/linux
+  rm -rf "${prepdir}"
+}
+
+install_built_kernel() {
+  if findmnt -no OPTIONS / | grep -q '\bro\b'; then
+    echo "error: root filesystem is read-only; fix storage I/O then: sudo mount -o remount,rw /"
+    exit 1
+  fi
+
+  sudo make -C "$KERNEL_SRC" O="$BUILDDIR" modules_install
+  sudo make -C "$KERNEL_SRC" O="$BUILDDIR" install
+  sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+}
+
+if [ ! -f "${KERNEL_SRC}/arch/x86/entry/syscalls/syscall_32.tbl" ]; then
+  prepare_suse_kernel_source
+fi
+
+if [ ! -f "${KERNEL_SRC}/arch/x86/entry/syscalls/syscall_32.tbl" ]; then
+  echo "error: failed to install full kernel source in ${KERNEL_SRC}"
+  exit 1
+fi
+
+sudo mkdir -p "${KERNEL_SRC}/certs"
+sudo chown -R $USER:users "${KERNEL_SRC}/certs"
+
+if [ ! -f "${BUILDDIR}/arch/x86/boot/bzImage" ]; then
+  mkdir -p "$BUILDDIR"
+  sudo chown -R $USER:users "$BUILDDIR"
+
+  cp /boot/config-${UNAME_R} "$BUILDDIR/.config" # 'make olddefconfig' changes kernel version comment?
 
   #scripts/config --disable CONFIG_MODULE_SIG
-  scripts/config --disable SYSTEM_TRUSTED_KEYS
-  scripts/config --disable SYSTEM_REVOCATION_KEYS
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --disable SYSTEM_TRUSTED_KEYS
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --disable SYSTEM_REVOCATION_KEYS
 
   # Enable CONFIG_CXL_MEM_RAW_COMMANDS=y
-  # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
+  # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support >
   #   [*] RAW Command Interface for Memory Devices (default=[_])
   # Enable CONFIG_CXL_REGION_INVALIDATION_TEST=y
-  scripts/config --enable CONFIG_CXL_MEM_RAW_COMMANDS
-  scripts/config --enable CONFIG_CXL_REGION_INVALIDATION_TEST
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_CXL_MEM_RAW_COMMANDS
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_CXL_REGION_INVALIDATION_TEST
 
   #make oldconfig
   # yes "" | make oldconfig # https://serverfault.com/a/116317/221343
-  make olddefconfig # https://serverfault.com/a/538150/221343
-  # make menuconfig # This is the text based menu config 
-  # make xconfig # This is the GUI based menu config 
+  make -C "$KERNEL_SRC" O="$BUILDDIR" olddefconfig # https://serverfault.com/a/538150/221343
+  # make -C "$KERNEL_SRC" O="$BUILDDIR" menuconfig
+  # make -C "$KERNEL_SRC" O="$BUILDDIR" xconfig
 
-  diff /boot/config-${UNAME_R} .config
-  grep CONFIG_CXL_MEM_RAW_COMMANDS .config
-  grep CONFIG_CXL_REGION_INVALIDATION_TEST .config
+  diff /boot/config-${UNAME_R} "$BUILDDIR/.config" || true
+  grep CONFIG_CXL_MEM_RAW_COMMANDS "$BUILDDIR/.config"
+  grep CONFIG_CXL_REGION_INVALIDATION_TEST "$BUILDDIR/.config"
 
+  pushd "${KERNEL_SRC}/certs"
+    if [[ ! -f MOK.key.pem || ! -f MOK.crt.pem ]]; then
+      openssl req -new -x509 -newkey rsa:2048 \
+        -keyout MOK.key.pem -out MOK.crt.pem -nodes -days 36500 \
+        -subj "/CN=cxl-raw-sles.sh Custom Kernel Signing"
+    fi
 
-  mkdir -p certs
-  cd certs
-    # Generate a new X.509 certificate and private key in PEM format
-    # openssl req -new -x509 -newkey rsa:2048 -keyout certs/signing_key.pem -out certs/signing_key.x509 -nodes -days 36500 \
-    #   -subj "/CN=Custom Kernel Signing/"
- 
-    [ ! -f MOK.key.pem ] && efikeygen --dbdir . --nickname "cxl-raw-sles.sh_nickname" --common-name "cxl-raw-sles.sh_Custom_Kernel_Signing" --out-cert mok.crt --out-key mok.key
-
-
-    bash -vx utilities/setup-mok-signing-and-kernel-sles.sh # from Copilot AI
-    # obs by utilities/setup-mok-signing-and-kernel-sles.sh: bash -vx utilities/prepare-mok-signing-sles.sh # from Copilot AI
+    bash -vx "${SCRIPT_DIR}/utilities/prepare-mok-signing-sles.sh"
 
 : <<'COMMENT'
-    file MOK.key.pem 
-    cat MOK.key.pem 
+    file MOK.key.pem
+    cat MOK.key.pem
     openssl rsa -in MOK.key.pem -outform PEM -out MOK.key.txt
     file MOK.key.txt
     cat MOK.key.txt
@@ -145,49 +209,51 @@ pushd /usr/src/linux/
 
 COMMENT
 
-  cd ..
+  popd
 
+  # make -C "$KERNEL_SRC" O="$BUILDDIR" clean
+  make -C "$KERNEL_SRC" O="$BUILDDIR" prepare
+  make -C "$KERNEL_SRC" O="$BUILDDIR" modules_prepare
 
-  # make clean
-  make prepare
-  make modules_prepare
+  make -C "$KERNEL_SRC" O="$BUILDDIR" -j$(nproc)
+else
+  echo "Using existing kernel build in ${BUILDDIR}"
+fi
 
-  make -j$(nproc)
+while true; do
+  read -n 1 -p "Press y to install the newly built kernel, or n to skip: " YN
+  case $YN in
+      [y] ) break;;
+      [n] ) break;;
+      * ) echo "Press y or n: ";;
+  esac
+done
 
+echo "\$YN=\"$YN\""
+if [ "$YN" == "y" ]; then
+  echo "Installing kernel from ${BUILDDIR}..."
+  install_built_kernel
+else
+  echo "Skipped kernel install"
+fi
 
-  CMD="sudo make modules_install; \
-sudo make install; \
-sudo grub2-mkconfig -o /boot/grub2/grub.cfg; \
-sudo make rpm-pkg"
-  # ToDo install rpms
+while true; do
+  read -n 1 -p "Press y to also run make rpm-pkg (slow, optional), or n to skip: " YN
+  case $YN in
+      [y] ) break;;
+      [n] ) break;;
+      * ) echo "Press y or n: ";;
+  esac
+done
 
-  while true; do
-    read -n 1 -p "Press y to install the newly built kernel, or n to skip: " YN
-    case $YN in
-        [y] ) break;;
-        [n] ) break;;
-        * ) echo "Press y or n: ";;
-    esac
-  done
+echo "\$YN=\"$YN\""
+if [ "$YN" == "y" ]; then
+  sudo make -C "$KERNEL_SRC" O="$BUILDDIR" rpm-pkg
+else
+  echo "Skipped: make rpm-pkg"
+fi
 
-  echo "\$YN=\"$YN\""
-  if [ "$YN" == "y" ]; then
-    #sudo dnf -y install --nogpgcheck \
-    #  ./x86_64/kernel-modules-core-${KVERSTR}.rpm \
-    #  ./x86_64/kernel-core-${KVERSTR}.rpm \
-    #  ./x86_64/kernel-modules-${KVERSTR}.rpm \
-    #  ./x86_64/kernel-${KVERSTR}.rpm
-    echo "Running: \"$CMD\""
-    $CMD
-  else
-    echo "Skipped: \"$CMD\""
-  fi
-
-
-  # sudo reboot
-
-popd
-
+# sudo reboot
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
