@@ -3,6 +3,26 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+AUTO_YES=false
+while [ $# -gt 0 ]; do
+  case $1 in
+    -y|--yes)
+      AUTO_YES=true
+      ;;
+    -h|--help)
+      echo "Usage: $(basename "$0") [-y]"
+      echo "  -y, --yes  auto-confirm install and RPM build prompts"
+      exit 0
+      ;;
+    *)
+      echo "error: unknown option: $1" >&2
+      echo "Try '$(basename "$0") --help'." >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
 format_elapsed() {
   local secs=$1
   if [ "$secs" -ge 3600 ]; then
@@ -24,6 +44,22 @@ run_timed() {
   end=$(date +%s)
   secs=$((end - start))
   echo "==> ${label}: finished in $(format_elapsed "$secs")"
+}
+
+prompt_yn() {
+  local msg="$1"
+  if [ "$AUTO_YES" = true ]; then
+    YN=y
+    echo "${msg}y (auto)"
+    return
+  fi
+  while true; do
+    read -n 1 -p "$msg" YN
+    case $YN in
+      [yn] ) break;;
+      * ) echo "Press y or n: ";;
+    esac
+  done
 }
 
 SCRIPT_START=$(date +%s)
@@ -277,14 +313,7 @@ else
   echo "Using existing kernel build in ${BUILDDIR}"
 fi
 
-while true; do
-  read -n 1 -p "Press y to install the newly built kernel, or n to skip: " YN
-  case $YN in
-      [y] ) break;;
-      [n] ) break;;
-      * ) echo "Press y or n: ";;
-  esac
-done
+prompt_yn "Press y to install the newly built kernel, or n to skip: "
 
 echo "\$YN=\"$YN\""
 if [ "$YN" == "y" ]; then
@@ -295,14 +324,7 @@ fi
 
 echo ""
 echo "Note: building kernel RPMs can take 30-45+ minutes on this system."
-while true; do
-  read -n 1 -p "Press y to build kernel RPMs for other systems, or n to skip: " YN
-  case $YN in
-      [y] ) break;;
-      [n] ) break;;
-      * ) echo "Press y or n: ";;
-  esac
-done
+prompt_yn "Press y to build kernel RPMs for other systems, or n to skip: "
 
 echo "\$YN=\"$YN\""
 if [ "$YN" == "y" ]; then
