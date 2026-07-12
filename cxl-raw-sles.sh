@@ -46,6 +46,38 @@ run_timed() {
   echo "==> ${label}: finished in $(format_elapsed "$secs")"
 }
 
+run_timed_with_heartbeat() {
+  local label="$1"
+  local interval="${2:-300}"
+  shift 2
+  local start end secs pid status heartbeat
+  start=$(date +%s)
+  echo "==> ${label} (started $(date +%H:%M:%S))"
+  (
+    while true; do
+      sleep "$interval" || exit 0
+      echo "==> ${label}: still running... ($(date +%H:%M:%S), elapsed $(format_elapsed "$(( $(date +%s) - start ))"))"
+    done
+  ) &
+  heartbeat=$!
+  "$@" &
+  pid=$!
+  if wait "$pid"; then
+    status=0
+  else
+    status=$?
+  fi
+  kill "$heartbeat" 2>/dev/null
+  wait "$heartbeat" 2>/dev/null || true
+  end=$(date +%s)
+  secs=$((end - start))
+  if [ "$status" -ne 0 ]; then
+    echo "==> ${label}: failed after $(format_elapsed "$secs")"
+    return "$status"
+  fi
+  echo "==> ${label}: finished in $(format_elapsed "$secs")"
+}
+
 prompt_yn() {
   local msg="$1"
   if [ "$AUTO_YES" = true ]; then
@@ -213,9 +245,10 @@ build_kernel_rpms() {
   RPM_OUT="${SCRIPT_DIR}/kernel-rpms-${KVERS}"
   echo ""
   echo "Warning: kernel RPM packaging (make binrpm-pkg) typically takes 30-45+ minutes."
-  echo "         rpmbuild may appear idle while it processes the large kernel RPM."
+  echo "         rpmbuild may spew ksym/kmod lines then go quiet for long stretches."
+  echo "         Status updates print every 5 minutes while this step runs."
   ensure_rpm_build
-  run_timed "Build kernel RPMs (make binrpm-pkg)" \
+  run_timed_with_heartbeat "Build kernel RPMs (make binrpm-pkg)" 300 \
     make -C "$KERNEL_SRC" O="$BUILDDIR" binrpm-pkg
   mkdir -p "$RPM_OUT"
   shopt -s nullglob
@@ -323,7 +356,7 @@ else
 fi
 
 echo ""
-echo "Note: building kernel RPMs can take 30-45+ minutes on this system."
+echo "Note: building kernel RPMs can take 30-45+ minutes; status updates print every 5 minutes."
 prompt_yn "Press y to build kernel RPMs for other systems, or n to skip: "
 
 echo "\$YN=\"$YN\""
