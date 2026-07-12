@@ -136,6 +136,35 @@ install_built_kernel() {
   sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 }
 
+ensure_rpm_build() {
+  if command -v rpmbuild >/dev/null; then
+    return 0
+  fi
+  echo "rpm-build not found; enabling Development Tools module..."
+  sudo SUSEConnect -p "sle-module-desktop-applications/${VERSION_ID}/x86_64" || true
+  sudo SUSEConnect -p "sle-module-development-tools/${VERSION_ID}/x86_64" || true
+  sudo zypper -n ref
+  sudo zypper -n install rpm-build
+}
+
+build_kernel_rpms() {
+  RPM_OUT="${SCRIPT_DIR}/kernel-rpms-${KVERS}"
+  ensure_rpm_build
+  echo "Building kernel RPMs from ${BUILDDIR} (make binrpm-pkg)..."
+  make -C "$KERNEL_SRC" O="$BUILDDIR" binrpm-pkg
+  mkdir -p "$RPM_OUT"
+  shopt -s nullglob
+  for rpm in "${HOME}/rpmbuild/RPMS/"*/*.rpm; do
+    case "$(basename "$rpm")" in
+      kernel-*|kernel-devel-*|kernel-headers-*)
+        cp -a "$rpm" "$RPM_OUT/"
+        ;;
+    esac
+  done
+  echo "Kernel RPMs written to ${RPM_OUT}:"
+  ls -lh "$RPM_OUT"/*.rpm
+}
+
 if [ ! -f "${KERNEL_SRC}/arch/x86/entry/syscalls/syscall_32.tbl" ]; then
   prepare_suse_kernel_source
 fi
@@ -238,7 +267,7 @@ else
 fi
 
 while true; do
-  read -n 1 -p "Press y to also run make rpm-pkg (slow, optional), or n to skip: " YN
+  read -n 1 -p "Press y to build kernel RPMs for other systems, or n to skip: " YN
   case $YN in
       [y] ) break;;
       [n] ) break;;
@@ -248,9 +277,10 @@ done
 
 echo "\$YN=\"$YN\""
 if [ "$YN" == "y" ]; then
-  sudo make -C "$KERNEL_SRC" O="$BUILDDIR" rpm-pkg
+  build_kernel_rpms
+  echo "Install on target: sudo rpm -Uvh --replacepkgs ${SCRIPT_DIR}/kernel-rpms-${KVERS}/*.rpm"
 else
-  echo "Skipped: make rpm-pkg"
+  echo "Skipped: kernel RPM build"
 fi
 
 # sudo reboot

@@ -302,20 +302,121 @@ Linux deb12-8-0-067x 6.1.0-28-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.119-1 (202
 
 
 ## cxl-raw-sles.sh
+
+SLES 15 SP6 (x86_64) tested with kernel 6.4.x.
+
+`cxl-raw-sles.sh` rebuilds the running SUSE kernel with:
+
+- `CONFIG_CXL_MEM_RAW_COMMANDS=y`
+- `CONFIG_CXL_REGION_INVALIDATION_TEST=y`
+
+It follows the [SUSE out-of-tree kernel build
+model](https://en.opensuse.org/Using_kernel-source_package): sources live
+under `/usr/src/linux`, but the build uses a separate object directory
+(`kernel-build-$(uname -r | sed 's/-default$//')/` under the script
+directory). Do not run `make mrproper` in `/usr/src/linux`.
+
+Copy the repo somewhere under your home directory. Your user account must
+be able to `sudo`.
+
+Optional: create `sles-registration-key` next to the script if the system
+is not already registered:
+
 ```
-rcpao@sles15sp7-06fx:~> cat /etc/os-release 
+SLES_REGISTRATION_KEY=your-registration-code
+```
+
+### Build and install on this system
+
+```
+$ cd ~/Documents/job/sgh/git-repo/cxl-raw-enabler
+$ chmod +x cxl-raw-sles.sh
+$ ./cxl-raw-sles.sh
+```
+
+The script will:
+
+1. Install build dependencies (`flex`, `bison`, `patch`, `kernel-devel`, …)
+2. Run `zypper source-install kernel-source` (SRPM into `/usr/src/packages/`)
+3. If needed, unpack the vanilla kernel tarball and apply SUSE patches into
+   `/usr/src/linux-$(uname -r | sed 's/-default$//')`
+4. Configure, build, and prompt to install the new kernel
+5. Prompt to build RPMs for other systems (see below)
+
+Re-running the script skips the compile if `kernel-build-*/arch/x86/boot/bzImage`
+already exists and goes straight to the install/RPM prompts.
+
+On reboot, select the new kernel in GRUB (for example
+`6.4.0-150600.23.81-default`).
+
+Verify after reboot:
+
+```
+$ uname -r
+$ grep CONFIG_CXL_MEM_RAW_COMMANDS /boot/config-$(uname -r)
+```
+
+Harmless messages during install:
+
+- `Cannot find LILO.` — normal on GRUB/UEFI systems
+- `Warning: os-prober will not be executed...` — normal on SLES
+
+### Build RPMs for another system
+
+Do **not** use `make rpm-pkg` on SLES; it requires a git checkout of the
+kernel tree. Use `make binrpm-pkg` instead (packaged in
+`utilities/build-kernel-rpms-sles.sh`).
+
+After a successful kernel build on the build host:
+
+```
+$ ./utilities/build-kernel-rpms-sles.sh
+```
+
+The first run enables the Development Tools module and installs `rpm-build`
+if needed:
+
+```
+$ sudo SUSEConnect -p sle-module-desktop-applications/15.6/x86_64
+$ sudo SUSEConnect -p sle-module-development-tools/15.6/x86_64
+$ sudo zypper -n install rpm-build
+```
+
+(Replace `15.6` with your `VERSION_ID` from `/etc/os-release`.)
+
+RPMs are copied to `kernel-rpms-6.4.0-150600.23.81/` (version varies), for
+example:
+
+- `kernel-6.4.0_150600.23.81_default-*.x86_64.rpm`
+- `kernel-devel-*.x86_64.rpm`
+- `kernel-headers-*.x86_64.rpm`
+
+Install on another **SLES 15 SP6 x86_64** system with the same architecture:
+
+```
+$ scp kernel-rpms-*/*.rpm target:/tmp/
+$ ssh target 'sudo rpm -Uvh --replacepkgs /tmp/kernel-*.rpm /tmp/kernel-devel-*.rpm /tmp/kernel-headers-*.rpm'
+$ ssh target 'sudo grub2-mkconfig -o /boot/grub2/grub.cfg'
+$ ssh target 'sudo reboot'
+```
+
+These are generic kernel RPMs, not SUSE `kernel-default` packages, so
+`--replacepkgs` is usually required. If Secure Boot is enabled on the
+target, you may also need MOK enrollment for module signing (see
+`utilities/prepare-mok-signing-sles.sh`).
+
+### Example system
+
+```
+$ cat /etc/os-release
 NAME="SLES"
-VERSION="15-SP7"
-VERSION_ID="15.7"
-PRETTY_NAME="SUSE Linux Enterprise Server 15 SP7"
+VERSION="15-SP6"
+VERSION_ID="15.6"
+PRETTY_NAME="SUSE Linux Enterprise Server 15 SP6"
 ID="sles"
-ID_LIKE="suse"
-ANSI_COLOR="0;32"
-CPE_NAME="cpe:/o:suse:sles:15:sp7"
-DOCUMENTATION_URL="https://documentation.suse.com/"
-rcpao@sles15sp7-06fx:~> uname -r
-6.4.0-150700.51-default
-rcpao@sles15sp7-06fx:~> 
+
+$ uname -r
+6.4.0-150600.23.81-default
 ```
 
 ## Ignore 
