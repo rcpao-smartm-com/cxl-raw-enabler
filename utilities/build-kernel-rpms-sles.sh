@@ -8,7 +8,8 @@ UNAME_R="${UNAME_R:-$(uname -r)}"
 KVERS="${KVERS:-${UNAME_R%-*}}"
 KERNEL_SRC="${KERNEL_SRC:-/usr/src/linux}"
 BUILDDIR="${BUILDDIR:-${SCRIPT_DIR}/kernel-build-${KVERS}}"
-RPM_OUT="${RPM_OUT:-${SCRIPT_DIR}/kernel-rpms-${KVERS}}"
+KERNEL_RELEASE="${KERNEL_RELEASE:-$(make -C "$KERNEL_SRC" O="$BUILDDIR" -s kernelrelease 2>/dev/null || echo "${KVERS}-default")}"
+RPM_OUT="${RPM_OUT:-${SCRIPT_DIR}/kernel-rpms-${KERNEL_RELEASE}}"
 
 format_elapsed() {
   local secs=$1

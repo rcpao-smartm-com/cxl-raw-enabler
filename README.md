@@ -309,6 +309,8 @@ SLES 15 SP6 (x86_64) tested with kernel 6.4.x.
 
 - `CONFIG_CXL_MEM_RAW_COMMANDS=y`
 - `CONFIG_CXL_REGION_INVALIDATION_TEST=y`
+- `CONFIG_LOCALVERSION` suffixed with `cxlraw` (installed kernel is
+  `6.4.0-150600.23.81-cxlraw-default`, not the stock SLES `…-default`)
 
 It follows the [SUSE out-of-tree kernel build
 model](https://en.opensuse.org/Using_kernel-source_package): sources live
@@ -347,7 +349,26 @@ Re-running the script skips the compile if `kernel-build-*/arch/x86/boot/bzImage
 already exists and goes straight to the install/RPM prompts.
 
 On reboot, select the new kernel in GRUB (for example
-`6.4.0-150600.23.81-default`).
+`6.4.0-150600.23.81-cxlraw-default` — note the `cxlraw` tag).
+
+The install step enables loading of **unsupported** kernel modules (required
+for custom-built kernels on SLES 15 SP4+) and rebuilds the initrd with
+`dracut`. Without this, reboot can land in emergency mode because modules such
+as `vfat` (for `/boot/efi`) and `btrfs` are blocked. See the [SUSE KB on
+unsupported kernel
+modules](https://support.scc.suse.com/s/kb/Enable-loading-of-unsupported-kernel-modules).
+
+If you already booted into emergency mode, boot the previous SUSE kernel from
+GRUB, then run (or re-run `./cxl-raw-sles.sh` install):
+
+```
+sudo cp /lib/modprobe.d/10-unsupported-modules.conf /etc/modprobe.d/
+sudo sed -i 's/allow_unsupported_modules 0/allow_unsupported_modules 1/' \
+  /etc/modprobe.d/10-unsupported-modules.conf
+sudo dracut -f /boot/initrd-6.4.0-150600.23.81-cxlraw-default 6.4.0-150600.23.81-cxlraw-default
+sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+sudo reboot
+```
 
 Verify after reboot:
 
@@ -384,8 +405,8 @@ $ sudo zypper -n install rpm-build
 
 (Replace `15.6` with your `VERSION_ID` from `/etc/os-release`.)
 
-RPMs are copied to `kernel-rpms-6.4.0-150600.23.81/` (version varies), for
-example:
+RPMs are copied to `kernel-rpms-6.4.0-150600.23.81-cxlraw-default/` (version
+varies), for example:
 
 - `kernel-6.4.0_150600.23.81_default-*.x86_64.rpm`
 - `kernel-devel-*.x86_64.rpm`
@@ -396,9 +417,14 @@ Install on another **SLES 15 SP6 x86_64** system with the same architecture:
 ```
 $ scp kernel-rpms-*/*.rpm target:/tmp/
 $ ssh target 'sudo rpm -Uvh --replacepkgs /tmp/kernel-*.rpm /tmp/kernel-devel-*.rpm /tmp/kernel-headers-*.rpm'
+$ ssh target 'sudo cp /lib/modprobe.d/10-unsupported-modules.conf /etc/modprobe.d/ && sudo sed -i "s/allow_unsupported_modules 0/allow_unsupported_modules 1/" /etc/modprobe.d/10-unsupported-modules.conf'
+$ ssh target 'KVER=6.4.0-150600.23.81-cxlraw-default; sudo dracut -f /boot/initrd-$KVER $KVER'
 $ ssh target 'sudo grub2-mkconfig -o /boot/grub2/grub.cfg'
 $ ssh target 'sudo reboot'
 ```
+
+On RPM targets, enable unsupported modules and rebuild initrd before reboot
+(same requirement as the build host; see SUSE KB linked above).
 
 These are generic kernel RPMs, not SUSE `kernel-default` packages, so
 `--replacepkgs` is usually required. If Secure Boot is enabled on the
@@ -416,7 +442,7 @@ PRETTY_NAME="SUSE Linux Enterprise Server 15 SP6"
 ID="sles"
 
 $ uname -r
-6.4.0-150600.23.81-default
+6.4.0-150600.23.81-cxlraw-default
 ```
 
 ## Ignore 

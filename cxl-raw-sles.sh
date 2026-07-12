@@ -178,6 +178,8 @@ UNAME_R=$(uname -r)
 UNAME_R_3=${UNAME_R%%-*} # "6.1.0" remove first/greedy "-##-amd64"
 UNAME_R_2=${UNAME_R%.*} # "6.1" remove last ".*"
 KVERS=${UNAME_R%-*} # "6.1.0-28" remove "-amd64"
+KERNEL_LOCALVERSION_TAG="cxlraw"
+KERNEL_RELEASE="${KVERS}-default"
 
 KERNEL_SRC=/usr/src/linux
 BUILDDIR="${SCRIPT_DIR}/kernel-build-${KVERS}"
@@ -219,6 +221,64 @@ prepare_suse_kernel_source() {
   rm -rf "${prepdir}"
 }
 
+apply_custom_kernel_localversion() {
+  local cfg="$1"
+  local current new_lv
+
+  current=$(grep '^CONFIG_LOCALVERSION=' "$cfg" | sed -n 's/^CONFIG_LOCALVERSION="\(.*\)"$/\1/p')
+  if [[ "$current" == *-default ]]; then
+    new_lv="${current%-default}-${KERNEL_LOCALVERSION_TAG}-default"
+  else
+    new_lv="${current}-${KERNEL_LOCALVERSION_TAG}"
+  fi
+  "${KERNEL_SRC}/scripts/config" --file "$cfg" --set-str LOCALVERSION "$new_lv"
+  echo "Kernel LOCALVERSION set to ${new_lv}"
+}
+
+resolve_kernel_release() {
+  KERNEL_RELEASE=$(make -C "$KERNEL_SRC" O="$BUILDDIR" -s kernelrelease)
+}
+
+# Custom kernels lack SUSE "supported" module signatures; without this, boot
+# fails (e.g. vfat/btrfs modules blocked → emergency mode). See:
+# https://support.scc.suse.com/s/kb/Enable-loading-of-unsupported-kernel-modules
+allow_unsupported_modules() {
+  local src=/lib/modprobe.d/10-unsupported-modules.conf
+  local dst=/etc/modprobe.d/10-unsupported-modules.conf
+
+  if [ ! -f "$src" ]; then
+    echo "error: ${src} not found"
+    exit 1
+  fi
+
+  if [ ! -f "$dst" ]; then
+    echo "Installing ${dst} from ${src}..."
+    sudo cp "$src" "$dst"
+  fi
+
+  if grep -qE '^[[:space:]]*allow_unsupported_modules[[:space:]]+0' "$dst"; then
+    echo "Enabling allow_unsupported_modules in ${dst}..."
+    sudo sed -i 's/^\([[:space:]]*allow_unsupported_modules[[:space:]]*\)0/\11/' "$dst"
+  elif grep -qE '^[[:space:]]*allow_unsupported_modules[[:space:]]+1' "$dst"; then
+    echo "allow_unsupported_modules already enabled in ${dst}"
+  else
+    echo "allow_unsupported_modules 1" | sudo tee -a "$dst" >/dev/null
+  fi
+}
+
+rebuild_initrd_for_built_kernel() {
+  resolve_kernel_release
+  local kver="$KERNEL_RELEASE"
+  local initrd="/boot/initrd-${kver}"
+
+  if ! command -v dracut >/dev/null; then
+    sudo zypper -n install dracut
+  fi
+
+  echo "Rebuilding initrd ${initrd} (dracut; initrd may load unsupported modules)..."
+  sudo dracut -f "$initrd" "$kver"
+}
+
 install_built_kernel() {
   if findmnt -no OPTIONS / | grep -q '\bro\b'; then
     echo "error: root filesystem is read-only; fix storage I/O then: sudo mount -o remount,rw /"
@@ -227,6 +287,8 @@ install_built_kernel() {
 
   sudo make -C "$KERNEL_SRC" O="$BUILDDIR" modules_install
   sudo make -C "$KERNEL_SRC" O="$BUILDDIR" install
+  allow_unsupported_modules
+  rebuild_initrd_for_built_kernel
   sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 }
 
@@ -242,7 +304,8 @@ ensure_rpm_build() {
 }
 
 build_kernel_rpms() {
-  RPM_OUT="${SCRIPT_DIR}/kernel-rpms-${KVERS}"
+  resolve_kernel_release
+  RPM_OUT="${SCRIPT_DIR}/kernel-rpms-${KERNEL_RELEASE}"
   echo ""
   echo "Warning: kernel RPM packaging (make binrpm-pkg) typically takes 30-45+ minutes."
   echo "         rpmbuild may spew ksym/kmod lines then go quiet for long stretches."
@@ -275,7 +338,14 @@ fi
 sudo mkdir -p "${KERNEL_SRC}/certs"
 sudo chown -R $USER:users "${KERNEL_SRC}/certs"
 
-if [ ! -f "${BUILDDIR}/arch/x86/boot/bzImage" ]; then
+if [ -f "${BUILDDIR}/arch/x86/boot/bzImage" ] && \
+   grep -q "^CONFIG_LOCALVERSION=.*${KERNEL_LOCALVERSION_TAG}" "${BUILDDIR}/.config" 2>/dev/null; then
+  resolve_kernel_release
+  echo "Using existing kernel build in ${BUILDDIR} (${KERNEL_RELEASE})"
+else
+  if [ -f "${BUILDDIR}/arch/x86/boot/bzImage" ]; then
+    echo "Existing build lacks ${KERNEL_LOCALVERSION_TAG} LOCALVERSION; reconfiguring and rebuilding..."
+  fi
   mkdir -p "$BUILDDIR"
   sudo chown -R $USER:users "$BUILDDIR"
 
@@ -292,15 +362,21 @@ if [ ! -f "${BUILDDIR}/arch/x86/boot/bzImage" ]; then
   "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_CXL_MEM_RAW_COMMANDS
   "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_CXL_REGION_INVALIDATION_TEST
 
+  apply_custom_kernel_localversion "$BUILDDIR/.config"
+
   #make oldconfig
   # yes "" | make oldconfig # https://serverfault.com/a/116317/221343
   make -C "$KERNEL_SRC" O="$BUILDDIR" olddefconfig # https://serverfault.com/a/538150/221343
   # make -C "$KERNEL_SRC" O="$BUILDDIR" menuconfig
   # make -C "$KERNEL_SRC" O="$BUILDDIR" xconfig
 
+  resolve_kernel_release
+  echo "Building kernel ${KERNEL_RELEASE}..."
+
   diff /boot/config-${UNAME_R} "$BUILDDIR/.config" || true
   grep CONFIG_CXL_MEM_RAW_COMMANDS "$BUILDDIR/.config"
   grep CONFIG_CXL_REGION_INVALIDATION_TEST "$BUILDDIR/.config"
+  grep CONFIG_LOCALVERSION "$BUILDDIR/.config"
 
   pushd "${KERNEL_SRC}/certs"
     if [[ ! -f MOK.key.pem || ! -f MOK.crt.pem ]]; then
@@ -342,15 +418,13 @@ COMMENT
   run_timed "Kernel build prepare" make -C "$KERNEL_SRC" O="$BUILDDIR" prepare
   run_timed "Kernel modules_prepare" make -C "$KERNEL_SRC" O="$BUILDDIR" modules_prepare
   run_timed "Kernel compile (make -j$(nproc))" make -C "$KERNEL_SRC" O="$BUILDDIR" -j"$(nproc)"
-else
-  echo "Using existing kernel build in ${BUILDDIR}"
 fi
 
 prompt_yn "Press y to install the newly built kernel, or n to skip: "
 
 echo "\$YN=\"$YN\""
 if [ "$YN" == "y" ]; then
-  run_timed "Install built kernel (modules + vmlinuz + grub)" install_built_kernel
+  run_timed "Install built kernel (modules + vmlinuz + initrd + grub)" install_built_kernel
 else
   echo "Skipped kernel install"
 fi
@@ -362,7 +436,7 @@ prompt_yn "Press y to build kernel RPMs for other systems, or n to skip: "
 echo "\$YN=\"$YN\""
 if [ "$YN" == "y" ]; then
   build_kernel_rpms
-  echo "Install on target: sudo rpm -Uvh --replacepkgs ${SCRIPT_DIR}/kernel-rpms-${KVERS}/*.rpm"
+  echo "Install on target: sudo rpm -Uvh --replacepkgs ${SCRIPT_DIR}/kernel-rpms-${KERNEL_RELEASE}/*.rpm"
 else
   echo "Skipped: kernel RPM build"
 fi
