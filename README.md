@@ -348,8 +348,18 @@ The script will:
 Re-running the script skips the compile if `kernel-build-*/arch/x86/boot/bzImage`
 already exists and goes straight to the install/RPM prompts.
 
-On reboot, select the new kernel in GRUB (for example
-`6.4.0-150600.23.81-cxlraw-default` — note the `cxlraw` tag).
+On reboot, GRUB should show **both** the stock SUSE kernel and the custom
+build as separate entries, for example:
+
+- `6.4.0-150600.23.81-default` — original SUSE `kernel-default` (fallback)
+- `6.4.0-150600.23.81-cxlraw-default` — custom build with CXL raw commands
+
+Select the **`cxlraw`** entry for CXL work. The `cxlraw` LOCALVERSION tag keeps
+custom modules/initrd under a distinct version string. On SLES, `make install`
+writes `/boot/vmlinuz` (unversioned); the script also copies the built image to
+`/boot/vmlinuz-…-cxlraw-default` so GRUB lists it beside the stock
+`vmlinuz-…-default`. The script does not remove `kernel-default` or run
+`zypper remove` on the SUSE kernel package.
 
 The install step enables loading of **unsupported** kernel modules (required
 for custom-built kernels on SLES 15 SP4+) and rebuilds the initrd with

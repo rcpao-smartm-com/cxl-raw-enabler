@@ -279,6 +279,53 @@ rebuild_initrd_for_built_kernel() {
   sudo dracut -f "$initrd" "$kver"
 }
 
+verify_dual_kernel_boot_setup() {
+  resolve_kernel_release
+  local stock_kver="${KVERS}-default"
+  local custom_kver="$KERNEL_RELEASE"
+
+  echo ""
+  echo "Boot images in /boot:"
+  ls -1 /boot/vmlinuz-* 2>/dev/null || true
+
+  if [ ! -f "/boot/vmlinuz-${custom_kver}" ]; then
+    echo "error: custom kernel /boot/vmlinuz-${custom_kver} not found after install"
+    exit 1
+  fi
+
+  if [ "${custom_kver}" = "${stock_kver}" ]; then
+    echo "error: custom kernel version matches stock (${stock_kver}); LOCALVERSION tag missing"
+    exit 1
+  fi
+
+  if [ -f "/boot/vmlinuz-${stock_kver}" ]; then
+    echo "Stock SLES kernel preserved: /boot/vmlinuz-${stock_kver}"
+  else
+    echo "warning: stock kernel /boot/vmlinuz-${stock_kver} not found"
+    echo "         (install kernel-default from SUSE if you need a fallback entry)"
+  fi
+
+  if [ -d /boot/loader/entries ]; then
+    echo ""
+    echo "BLS loader entries:"
+    ls -1 /boot/loader/entries/*.conf 2>/dev/null || true
+  fi
+
+  echo ""
+  echo "GRUB should list both kernels. Boot ${custom_kver} for CXL raw commands;"
+  echo "boot ${stock_kver} to fall back to the original SUSE kernel."
+  echo "The script does not remove the kernel-default RPM or stock /boot files."
+}
+
+install_versioned_vmlinuz() {
+  resolve_kernel_release
+  local vmlinuz="/boot/vmlinuz-${KERNEL_RELEASE}"
+
+  echo "Installing versioned vmlinuz ${vmlinuz}..."
+  sudo cp "${BUILDDIR}/arch/x86/boot/bzImage" "$vmlinuz"
+  sudo chmod 644 "$vmlinuz"
+}
+
 install_built_kernel() {
   if findmnt -no OPTIONS / | grep -q '\bro\b'; then
     echo "error: root filesystem is read-only; fix storage I/O then: sudo mount -o remount,rw /"
@@ -287,9 +334,11 @@ install_built_kernel() {
 
   sudo make -C "$KERNEL_SRC" O="$BUILDDIR" modules_install
   sudo make -C "$KERNEL_SRC" O="$BUILDDIR" install
+  install_versioned_vmlinuz
   allow_unsupported_modules
   rebuild_initrd_for_built_kernel
   sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+  verify_dual_kernel_boot_setup
 }
 
 ensure_rpm_build() {
