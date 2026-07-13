@@ -330,9 +330,14 @@ SLES_REGISTRATION_KEY=your-registration-code
 
 ### Build and install on this system
 
+Run `sudo -v` first so install steps (`make modules_install`, `dracut`,
+`grub2-mkconfig`, …) do not hang waiting for a password. `-y` auto-confirms
+script prompts only; it does not supply the root password.
+
 ```
 $ cd ~/Documents/job/sgh/git-repo/cxl-raw-enabler
 $ chmod +x cxl-raw-sles.sh
+$ sudo -v
 $ ./cxl-raw-sles.sh
 ```
 
