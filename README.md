@@ -297,15 +297,16 @@ kernel-lt-6.1.122-1.el9.elrepo
 
 ## cxl-raw-debian.sh
 
-cxl-raw-debian.sh gets and compiles the latest kernel (currently 6.1.0-28-amd64 for debian-12.8.0):
+cxl-raw-debian.sh gets and compiles the latest kernel (currently
+6.1.0-28-amd64 for debian-12.8.0):
 Linux deb12-8-0-067x 6.1.0-28-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.119-1 (2024-11-22) x86_64 GNU/Linux
 
 
-## cxl-raw-sles.sh
+## SLES (`sles/`)
 
 SLES 15 SP6 (x86_64) tested with kernel 6.4.x.
 
-`cxl-raw-sles.sh` rebuilds the running SUSE kernel with:
+`sles/cxl-raw-sles.sh` rebuilds the running SUSE kernel with:
 
 - `CONFIG_CXL_MEM_RAW_COMMANDS=y`
 - `CONFIG_CXL_REGION_INVALIDATION_TEST=y`
@@ -318,7 +319,7 @@ Run `sudo -v` first so install steps (`make modules_install`, `dracut`,
 `grub2-mkconfig`, …) do not hang waiting for a password.
 
 ```
-$ cd ~/Documents/job/sgh/git-repo/cxl-raw-enabler
+$ cd ~/Documents/job/sgh/git-repo/cxl-raw-enabler/sles
 $ chmod +x cxl-raw-sles.sh
 $ sudo -v
 $ ./cxl-raw-sles.sh -y
@@ -343,43 +344,63 @@ Verify after reboot:
 
 ```
 $ uname -r
-$ grep CONFIG_CXL_MEM_RAW_COMMANDS /boot/config-$(uname -r)
+$ grep CONFIG_CXL_MEM_RAW_COMMANDS /boot/config-$(uname -r) # Warning: This may not reflect the running kernel's actual settings
 ```
 
 ### Build RPMs for another system
 
-Use `make binrpm-pkg` (packaged in
-`utilities/build-kernel-rpms-sles.sh`).
+Use `make binrpm-pkg` (packaged in `sles/utilities/build-kernel-rpms-sles.sh`).
 
 After a successful kernel build on the build host:
 
 ```
-$ ./utilities/build-kernel-rpms-sles.sh
+$ ./sles/utilities/build-kernel-rpms-sles.sh
 ```
 
-Built RPMs are copied to `kernel-rpms-6.4.0-150600.23.81-cxlraw-default/` (version
+Built RPMs are copied to `sles/kernel-rpms-6.4.0-150600.23.81-cxlraw-default/` (version
 varies), for example:
 
 - `kernel-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm`
 - `kernel-headers-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm`
 
 Install on another **SLES 15 SP6 x86_64** system with the same architecture.
-These RPMs are unsigned (local `make binrpm-pkg` output); use `--nosignature`
-with `rpm`, or `--allow-unsigned-rpm` with `zypper`:
+Copy the RPMs to `/tmp` on the target, then run
+`sles/utilities/install-cxlraw-kernel-rpms-sles.sh` (unsigned local `make binrpm-pkg`
+output):
 
 ```
-$ scp kernel-rpms-*/*.rpm target:/tmp/
-$ ssh target 'sudo rpm -Uvh --replacepkgs --nosignature /tmp/kernel-*.rpm /tmp/kernel-headers-*.rpm'
+$ scp sles/kernel-rpms-*/*.rpm target:/tmp/
+$ ssh target 'curl -fsSL https://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler/raw/main/sles/utilities/install-cxlraw-kernel-rpms-sles.sh | sudo bash -s -- -y'
+```
+
+Or on the target directly after `scp`:
+
+```
+$ sudo -v
+$ curl -fsSL https://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler/raw/main/sles/utilities/install-cxlraw-kernel-rpms-sles.sh | sudo bash -s -- -y
+```
+
+The script installs the RPMs (`rpm --nosignature`), enables unsupported
+modules, rebuilds initrd with `dracut`, updates GRUB, and reboots. Options:
+`-y` to reboot without prompting, `--no-reboot` to skip reboot. Override
+`KVER` or `RPM_DIR` if needed; set `RPM_URL_BASE` to download RPMs instead of
+using `/tmp`.
+
+Manual equivalent:
+
+```
+$ sudo rpm -Uvh --replacepkgs --nosignature /tmp/kernel-*.rpm /tmp/kernel-headers-*.rpm
 # or: sudo zypper install --allow-unsigned-rpm /tmp/kernel-*.rpm
-$ ssh target 'sudo cp /lib/modprobe.d/10-unsupported-modules.conf /etc/modprobe.d/ && sudo sed -i "s/allow_unsupported_modules 0/allow_unsupported_modules 1/" /etc/modprobe.d/10-unsupported-modules.conf'
-$ ssh target 'KVER=6.4.0-150600.23.81-cxlraw-default; sudo dracut -f /boot/initrd-$KVER $KVER'
-$ ssh target 'sudo grub2-mkconfig -o /boot/grub2/grub.cfg'
-$ ssh target 'sudo reboot'
+$ sudo cp /lib/modprobe.d/10-unsupported-modules.conf /etc/modprobe.d/
+$ sudo sed -i 's/allow_unsupported_modules 0/allow_unsupported_modules 1/' /etc/modprobe.d/10-unsupported-modules.conf
+$ sudo dracut -f /boot/initrd-6.4.0-150600.23.81-cxlraw-default 6.4.0-150600.23.81-cxlraw-default
+$ sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+$ sudo reboot
 ```
 
 If Secure Boot is enabled on the
 target, you may also need MOK enrollment for module signing (see
-`utilities/prepare-mok-signing-sles.sh`).
+`sles/utilities/prepare-mok-signing-sles.sh`).
 
 ### Example system
 

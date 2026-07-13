@@ -116,8 +116,7 @@ build_kernel_rpms() {
 Install on another SLES 15 SP6 x86_64 system (same architecture):
 
   scp ${RPM_OUT}/*.rpm target:/tmp/
-  ssh target 'sudo rpm -Uvh --replacepkgs /tmp/kernel-*.rpm /tmp/kernel-devel-*.rpm /tmp/kernel-headers-*.rpm'
-  ssh target 'sudo grub2-mkconfig -o /boot/grub2/grub.cfg && sudo reboot'
+  curl -fsSL https://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler/raw/main/sles/utilities/install-cxlraw-kernel-rpms-sles.sh | sudo bash -s -- -y
 
 EOF
 }
