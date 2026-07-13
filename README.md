@@ -363,11 +363,14 @@ varies), for example:
 - `kernel-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm`
 - `kernel-headers-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm`
 
-Install on another **SLES 15 SP6 x86_64** system with the same architecture:
+Install on another **SLES 15 SP6 x86_64** system with the same architecture.
+These RPMs are unsigned (local `make binrpm-pkg` output); use `--nosignature`
+with `rpm`, or `--allow-unsigned-rpm` with `zypper`:
 
 ```
 $ scp kernel-rpms-*/*.rpm target:/tmp/
-$ ssh target 'sudo rpm -Uvh --replacepkgs --nosignature /tmp/kernel-*.rpm /tmp/kernel-devel-*.rpm /tmp/kernel-headers-*.rpm'
+$ ssh target 'sudo rpm -Uvh --replacepkgs --nosignature /tmp/kernel-*.rpm /tmp/kernel-headers-*.rpm'
+# or: sudo zypper install --allow-unsigned-rpm /tmp/kernel-*.rpm
 $ ssh target 'sudo cp /lib/modprobe.d/10-unsupported-modules.conf /etc/modprobe.d/ && sudo sed -i "s/allow_unsupported_modules 0/allow_unsupported_modules 1/" /etc/modprobe.d/10-unsupported-modules.conf'
 $ ssh target 'KVER=6.4.0-150600.23.81-cxlraw-default; sudo dracut -f /boot/initrd-$KVER $KVER'
 $ ssh target 'sudo grub2-mkconfig -o /boot/grub2/grub.cfg'
