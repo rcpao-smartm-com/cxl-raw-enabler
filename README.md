@@ -309,72 +309,26 @@ SLES 15 SP6 (x86_64) tested with kernel 6.4.x.
 
 - `CONFIG_CXL_MEM_RAW_COMMANDS=y`
 - `CONFIG_CXL_REGION_INVALIDATION_TEST=y`
-- `CONFIG_LOCALVERSION` suffixed with `cxlraw` (installed kernel is
-  `6.4.0-150600.23.81-cxlraw-default`, not the stock SLES `…-default`)
-
-It follows the [SUSE out-of-tree kernel build
-model](https://en.opensuse.org/Using_kernel-source_package): sources live
-under `/usr/src/linux`, but the build uses a separate object directory
-(`kernel-build-$(uname -r | sed 's/-default$//')/` under the script
-directory). Do not run `make mrproper` in `/usr/src/linux`.
-
-Copy the repo somewhere under your home directory. Your user account must
-be able to `sudo`.
-
-Optional: create `sles-registration-key` next to the script if the system
-is not already registered:
-
-```
-SLES_REGISTRATION_KEY=your-registration-code
-```
+- `CONFIG_LOCALVERSION` suffixed with `cxlraw` (e.g., 
+  `6.4.0-150600.23.81-cxlraw-default`)
 
 ### Build and install on this system
 
 Run `sudo -v` first so install steps (`make modules_install`, `dracut`,
-`grub2-mkconfig`, …) do not hang waiting for a password. `-y` auto-confirms
-script prompts only; it does not supply the root password.
+`grub2-mkconfig`, …) do not hang waiting for a password.
 
 ```
 $ cd ~/Documents/job/sgh/git-repo/cxl-raw-enabler
 $ chmod +x cxl-raw-sles.sh
 $ sudo -v
-$ ./cxl-raw-sles.sh
+$ ./cxl-raw-sles.sh -y
 ```
-
-The script will:
-
-1. Install build dependencies (`flex`, `bison`, `patch`, `kernel-devel`, …)
-2. Run `zypper source-install kernel-source` (SRPM into `/usr/src/packages/`)
-3. If needed, unpack the vanilla kernel tarball and apply SUSE patches into
-   `/usr/src/linux-$(uname -r | sed 's/-default$//')`
-4. Configure, build, and prompt to install the new kernel
-5. Prompt to build RPMs for other systems (see below)
-
-Re-running the script skips the compile if `kernel-build-*/arch/x86/boot/bzImage`
-already exists and goes straight to the install/RPM prompts.
 
 On reboot, GRUB should show **both** the stock SUSE kernel and the custom
 build as separate entries, for example:
 
 - `6.4.0-150600.23.81-default` — original SUSE `kernel-default` (fallback)
 - `6.4.0-150600.23.81-cxlraw-default` — custom build with CXL raw commands
-
-Select the **`cxlraw`** entry for CXL work. The `cxlraw` LOCALVERSION tag keeps
-custom modules/initrd under a distinct version string. On SLES, `make install`
-writes `/boot/vmlinuz` (unversioned); the script also copies the built image to
-`/boot/vmlinuz-…-cxlraw-default` so GRUB lists it beside the stock
-`vmlinuz-…-default`. The script does not remove `kernel-default` or run
-`zypper remove` on the SUSE kernel package.
-
-The install step enables loading of **unsupported** kernel modules (required
-for custom-built kernels on SLES 15 SP4+) and rebuilds the initrd with
-`dracut`. Without this, reboot can land in emergency mode because modules such
-as `vfat` (for `/boot/efi`) and `btrfs` are blocked. See the [SUSE KB on
-unsupported kernel
-modules](https://support.scc.suse.com/s/kb/Enable-loading-of-unsupported-kernel-modules).
-
-If you already booted into emergency mode, boot the previous SUSE kernel from
-GRUB, then run (or re-run `./cxl-raw-sles.sh` install):
 
 ```
 sudo cp /lib/modprobe.d/10-unsupported-modules.conf /etc/modprobe.d/
@@ -392,15 +346,9 @@ $ uname -r
 $ grep CONFIG_CXL_MEM_RAW_COMMANDS /boot/config-$(uname -r)
 ```
 
-Harmless messages during install:
-
-- `Cannot find LILO.` — normal on GRUB/UEFI systems
-- `Warning: os-prober will not be executed...` — normal on SLES
-
 ### Build RPMs for another system
 
-Do **not** use `make rpm-pkg` on SLES; it requires a git checkout of the
-kernel tree. Use `make binrpm-pkg` instead (packaged in
+Use `make binrpm-pkg` (packaged in
 `utilities/build-kernel-rpms-sles.sh`).
 
 After a successful kernel build on the build host:
@@ -409,40 +357,24 @@ After a successful kernel build on the build host:
 $ ./utilities/build-kernel-rpms-sles.sh
 ```
 
-The first run enables the Development Tools module and installs `rpm-build`
-if needed:
-
-```
-$ sudo SUSEConnect -p sle-module-desktop-applications/15.6/x86_64
-$ sudo SUSEConnect -p sle-module-development-tools/15.6/x86_64
-$ sudo zypper -n install rpm-build
-```
-
-(Replace `15.6` with your `VERSION_ID` from `/etc/os-release`.)
-
-RPMs are copied to `kernel-rpms-6.4.0-150600.23.81-cxlraw-default/` (version
+Built RPMs are copied to `kernel-rpms-6.4.0-150600.23.81-cxlraw-default/` (version
 varies), for example:
 
-- `kernel-6.4.0_150600.23.81_default-*.x86_64.rpm`
-- `kernel-devel-*.x86_64.rpm`
-- `kernel-headers-*.x86_64.rpm`
+- `kernel-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm`
+- `kernel-headers-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm`
 
 Install on another **SLES 15 SP6 x86_64** system with the same architecture:
 
 ```
 $ scp kernel-rpms-*/*.rpm target:/tmp/
-$ ssh target 'sudo rpm -Uvh --replacepkgs /tmp/kernel-*.rpm /tmp/kernel-devel-*.rpm /tmp/kernel-headers-*.rpm'
+$ ssh target 'sudo rpm -Uvh --replacepkgs --nosignature /tmp/kernel-*.rpm /tmp/kernel-devel-*.rpm /tmp/kernel-headers-*.rpm'
 $ ssh target 'sudo cp /lib/modprobe.d/10-unsupported-modules.conf /etc/modprobe.d/ && sudo sed -i "s/allow_unsupported_modules 0/allow_unsupported_modules 1/" /etc/modprobe.d/10-unsupported-modules.conf'
 $ ssh target 'KVER=6.4.0-150600.23.81-cxlraw-default; sudo dracut -f /boot/initrd-$KVER $KVER'
 $ ssh target 'sudo grub2-mkconfig -o /boot/grub2/grub.cfg'
 $ ssh target 'sudo reboot'
 ```
 
-On RPM targets, enable unsupported modules and rebuild initrd before reboot
-(same requirement as the build host; see SUSE KB linked above).
-
-These are generic kernel RPMs, not SUSE `kernel-default` packages, so
-`--replacepkgs` is usually required. If Secure Boot is enabled on the
+If Secure Boot is enabled on the
 target, you may also need MOK enrollment for module signing (see
 `utilities/prepare-mok-signing-sles.sh`).
 
