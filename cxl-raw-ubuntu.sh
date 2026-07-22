@@ -218,16 +218,30 @@ make olddefconfig # https://serverfault.com/a/538150/221343
 # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
 #   [*] RAW Command Interface for Memory Devices (default=[_])
 # Enable CONFIG_CXL_REGION_INVALIDATION_TEST=y
-#
-sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < .config > .config.cxl_raw_y
-mv .config.cxl_raw_y .config 
-sed -e 's/# CONFIG_CXL_REGION_INVALIDATION_TEST is not set/CONFIG_CXL_REGION_INVALIDATION_TEST=y/' < .config > .config.cxl_raw_y
-mv .config.cxl_raw_y .config 
+# NVDIMM / DAX / PMEM and related options
+./scripts/config --file .config --enable CONFIG_CXL_MEM_RAW_COMMANDS
+./scripts/config --file .config --enable CONFIG_CXL_REGION_INVALIDATION_TEST
+./scripts/config --file .config --enable CONFIG_ACPI_NFIT
+./scripts/config --file .config --enable CONFIG_TRANSPARENT_HUGEPAGE
+./scripts/config --file .config --enable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
+./scripts/config --file .config --disable CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
+./scripts/config --file .config --enable CONFIG_DEV_DAX
+./scripts/config --file .config --enable CONFIG_ND_BTT
+./scripts/config --file .config --enable CONFIG_NVDIMM_SECURITY_TEST
+./scripts/config --file .config --enable CONFIG_BLK_DEV_PMEM
+./scripts/config --file .config --enable CONFIG_IO_STRICT_DEVMEM
+make olddefconfig
 #
 diff /boot/config-${UNAME_R} .config
 grep CONFIG_CXL_MEM_RAW_COMMANDS .config
-# CONFIG_CXL_MEM_RAW_COMMANDS=y
-# CONFIG_CXL_REGION_INVALIDATION_TEST=y
+grep CONFIG_CXL_REGION_INVALIDATION_TEST .config
+grep CONFIG_ACPI_NFIT .config
+grep CONFIG_TRANSPARENT_HUGEPAGE .config
+grep CONFIG_DEV_DAX .config
+grep CONFIG_ND_BTT .config
+grep CONFIG_NVDIMM_SECURITY_TEST .config
+grep CONFIG_BLK_DEV_PMEM .config
+grep CONFIG_IO_STRICT_DEVMEM .config
 
 
 # Copy /usr/src/linux-headers-${UNAME_R}/Module.symvers

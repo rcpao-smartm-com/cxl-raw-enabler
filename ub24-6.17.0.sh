@@ -66,13 +66,32 @@ cd /lib/modules/$(uname -r)/build
 grep CONFIG_CXL_MEM_RAW_COMMANDS .config
 
 sudo scripts/config --file .config --set-val CONFIG_CXL_MEM_RAW_COMMANDS y
+sudo scripts/config --file .config --enable CONFIG_ACPI_NFIT
+sudo scripts/config --file .config --enable CONFIG_TRANSPARENT_HUGEPAGE
+sudo scripts/config --file .config --enable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
+sudo scripts/config --file .config --disable CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
+sudo scripts/config --file .config --enable CONFIG_DEV_DAX
+sudo scripts/config --file .config --enable CONFIG_ND_BTT
+sudo scripts/config --file .config --enable CONFIG_NVDIMM_SECURITY_TEST
+sudo scripts/config --file .config --enable CONFIG_BLK_DEV_PMEM
+sudo scripts/config --file .config --enable CONFIG_IO_STRICT_DEVMEM
 grep CONFIG_CXL_MEM_RAW_COMMANDS .config
+grep CONFIG_ACPI_NFIT .config
+grep CONFIG_TRANSPARENT_HUGEPAGE .config
+grep CONFIG_DEV_DAX .config
+grep CONFIG_ND_BTT .config
+grep CONFIG_NVDIMM_SECURITY_TEST .config
+grep CONFIG_BLK_DEV_PMEM .config
+grep CONFIG_IO_STRICT_DEVMEM .config
 
 sudo make olddefconfig
 
 sudo make include/generated/autoconf.h
 
 grep CONFIG_CXL_MEM_RAW_COMMANDS include/generated/autoconf.h
+grep CONFIG_ACPI_NFIT include/generated/autoconf.h
+grep CONFIG_DEV_DAX include/generated/autoconf.h
+grep CONFIG_BLK_DEV_PMEM include/generated/autoconf.h
 
 cd /lib/modules/$(uname -r)/build
 sudo make M=drivers/cxl modules

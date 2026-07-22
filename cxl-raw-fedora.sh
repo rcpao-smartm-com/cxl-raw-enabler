@@ -8,6 +8,17 @@
 #
 #       Ref: https://elrepo.org/bugs/view.php?id=1498#bugnotes
 #       elrepo.org is precompiled with CONFIG_CXL_MEM_RAW_COMMANDS=y
+#
+# Desired config options (when building a custom kernel instead of elrepo):
+#   CONFIG_ACPI_NFIT=y
+#   CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
+#   # CONFIG_TRANSPARENT_HUGEPAGE_MADVISE is not set
+#   CONFIG_CXL_MEM_RAW_COMMANDS=y
+#   CONFIG_DEV_DAX=y
+#   CONFIG_ND_BTT=y
+#   CONFIG_NVDIMM_SECURITY_TEST=y
+#   CONFIG_BLK_DEV_PMEM=y
+#   CONFIG_IO_STRICT_DEVMEM=y
 
 
 # https://elrepo.org/wiki/doku.php?id=start

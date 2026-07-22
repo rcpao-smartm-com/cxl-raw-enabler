@@ -411,6 +411,17 @@ else
   "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_CXL_MEM_RAW_COMMANDS
   "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_CXL_REGION_INVALIDATION_TEST
 
+  # NVDIMM / DAX / PMEM and related options
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_ACPI_NFIT
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_TRANSPARENT_HUGEPAGE
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --disable CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_DEV_DAX
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_ND_BTT
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_NVDIMM_SECURITY_TEST
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_BLK_DEV_PMEM
+  "${KERNEL_SRC}/scripts/config" --file "$BUILDDIR/.config" --enable CONFIG_IO_STRICT_DEVMEM
+
   apply_custom_kernel_localversion "$BUILDDIR/.config"
 
   #make oldconfig
@@ -425,6 +436,13 @@ else
   diff /boot/config-${UNAME_R} "$BUILDDIR/.config" || true
   grep CONFIG_CXL_MEM_RAW_COMMANDS "$BUILDDIR/.config"
   grep CONFIG_CXL_REGION_INVALIDATION_TEST "$BUILDDIR/.config"
+  grep CONFIG_ACPI_NFIT "$BUILDDIR/.config"
+  grep CONFIG_TRANSPARENT_HUGEPAGE "$BUILDDIR/.config"
+  grep CONFIG_DEV_DAX "$BUILDDIR/.config"
+  grep CONFIG_ND_BTT "$BUILDDIR/.config"
+  grep CONFIG_NVDIMM_SECURITY_TEST "$BUILDDIR/.config"
+  grep CONFIG_BLK_DEV_PMEM "$BUILDDIR/.config"
+  grep CONFIG_IO_STRICT_DEVMEM "$BUILDDIR/.config"
   grep CONFIG_LOCALVERSION "$BUILDDIR/.config"
 
   pushd "${KERNEL_SRC}/certs"

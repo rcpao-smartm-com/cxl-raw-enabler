@@ -5,8 +5,8 @@ https://github.com/rcpao-smartm-com/cxl-raw-enabler
 ## cxl-raw-ubuntu.sh
 
 The bash script, cxl-raw-ubuntu.sh, gets the source code for 
-the currently running kernel, enables CONFIG_CXL_MEM_RAW_COMMANDS=y, 
-and creates bash scripts in 
+the currently running kernel, enables CONFIG_CXL_MEM_RAW_COMMANDS=y
+and related NVDIMM/DAX/PMEM options, and creates bash scripts in 
 `/usr/lib/modules/$(uname -r)/kernel/drivers/`:
 
 - cxl-raw.sh - enable CXL RAW modules
@@ -153,8 +153,16 @@ currently running kernel version. [If you figure out how, please let me
 know, and I will modify this script!]
 
 This script enables the following:  
+CONFIG_ACPI_NFIT=y  
+CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y  
+# CONFIG_TRANSPARENT_HUGEPAGE_MADVISE is not set  
 CONFIG_CXL_MEM_RAW_COMMANDS=y  
 CONFIG_CXL_REGION_INVALIDATION_TEST=y  
+CONFIG_DEV_DAX=y  
+CONFIG_ND_BTT=y  
+CONFIG_NVDIMM_SECURITY_TEST=y  
+CONFIG_BLK_DEV_PMEM=y  
+CONFIG_IO_STRICT_DEVMEM=y  
 
 This script will build and install the new kernel RPMs.
 
@@ -308,8 +316,16 @@ SLES 15 SP6 (x86_64) tested with kernel 6.4.x.
 
 `sles/cxl-raw-sles.sh` rebuilds the running SUSE kernel with:
 
+- `CONFIG_ACPI_NFIT=y`
+- `CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y`
+- `# CONFIG_TRANSPARENT_HUGEPAGE_MADVISE is not set`
 - `CONFIG_CXL_MEM_RAW_COMMANDS=y`
 - `CONFIG_CXL_REGION_INVALIDATION_TEST=y`
+- `CONFIG_DEV_DAX=y`
+- `CONFIG_ND_BTT=y`
+- `CONFIG_NVDIMM_SECURITY_TEST=y`
+- `CONFIG_BLK_DEV_PMEM=y`
+- `CONFIG_IO_STRICT_DEVMEM=y`
 - `CONFIG_LOCALVERSION` suffixed with `cxlraw` (e.g., 
   `6.4.0-150600.23.81-cxlraw-default`)
 
@@ -344,7 +360,8 @@ Verify after reboot:
 
 ```
 $ uname -r
-$ grep CONFIG_CXL_MEM_RAW_COMMANDS /boot/config-$(uname -r) # Warning: This may not reflect the running kernel's actual settings
+$ grep -E 'CONFIG_(CXL_MEM_RAW_COMMANDS|ACPI_NFIT|TRANSPARENT_HUGEPAGE_ALWAYS|DEV_DAX|ND_BTT|NVDIMM_SECURITY_TEST|BLK_DEV_PMEM|IO_STRICT_DEVMEM)=' /boot/config-$(uname -r)
+# Warning: /boot/config may not reflect the running kernel's actual settings
 ```
 
 ### Build RPMs for another system

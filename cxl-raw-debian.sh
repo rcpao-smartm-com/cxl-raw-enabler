@@ -61,22 +61,35 @@ pushd linux-${UNAME_R_3}
   # Device Drivers > PCI support > CXL (Compute Express Link) Devices Support > 
   #   [*] RAW Command Interface for Memory Devices (default=[_])
   # Enable CONFIG_CXL_REGION_INVALIDATION_TEST=y
+  # NVDIMM / DAX / PMEM and related options
   #
   # CFG=.config
   CFG=debian/config/config
   CFGBAK=${CFG}.bak
-  CFGTMP=${CFG}.tmp
   [ ! -f ${CFGBAK} ] && cp ${CFG} ${CFGBAK}
-  sed -e 's/# CONFIG_CXL_MEM_RAW_COMMANDS is not set/CONFIG_CXL_MEM_RAW_COMMANDS=y/' < ${CFG} > ${CFGTMP}
-  mv ${CFGTMP} ${CFG} 
-  #sed -e 's/# CONFIG_CXL_REGION_INVALIDATION_TEST is not set/CONFIG_CXL_REGION_INVALIDATION_TEST=y/' < ${CFG} > ${CFGTMP}
-  #mv ${CFGTMP} ${CFG} 
+  ./scripts/config --file ${CFG} --enable CONFIG_CXL_MEM_RAW_COMMANDS
+  ./scripts/config --file ${CFG} --enable CONFIG_CXL_REGION_INVALIDATION_TEST
+  ./scripts/config --file ${CFG} --enable CONFIG_ACPI_NFIT
+  ./scripts/config --file ${CFG} --enable CONFIG_TRANSPARENT_HUGEPAGE
+  ./scripts/config --file ${CFG} --enable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
+  ./scripts/config --file ${CFG} --disable CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
+  ./scripts/config --file ${CFG} --enable CONFIG_DEV_DAX
+  ./scripts/config --file ${CFG} --enable CONFIG_ND_BTT
+  ./scripts/config --file ${CFG} --enable CONFIG_NVDIMM_SECURITY_TEST
+  ./scripts/config --file ${CFG} --enable CONFIG_BLK_DEV_PMEM
+  ./scripts/config --file ${CFG} --enable CONFIG_IO_STRICT_DEVMEM
   #
   # diff /boot/config-${UNAME_R} ${CFG}${CFGBAK}
   diff ${CFG} ${CFGBAK}
   grep CONFIG_CXL_MEM_RAW_COMMANDS ${CFG}
-  # CONFIG_CXL_MEM_RAW_COMMANDS=y
-  #CONFIG_CXL_REGION_INVALIDATION_TEST=y
+  grep CONFIG_CXL_REGION_INVALIDATION_TEST ${CFG}
+  grep CONFIG_ACPI_NFIT ${CFG}
+  grep CONFIG_TRANSPARENT_HUGEPAGE ${CFG}
+  grep CONFIG_DEV_DAX ${CFG}
+  grep CONFIG_ND_BTT ${CFG}
+  grep CONFIG_NVDIMM_SECURITY_TEST ${CFG}
+  grep CONFIG_BLK_DEV_PMEM ${CFG}
+  grep CONFIG_IO_STRICT_DEVMEM ${CFG}
 
   # Debian custom version suffix:
   Suffix="+cxlraw1"
@@ -86,7 +99,7 @@ pushd linux-${UNAME_R_3}
     NewVer="${CurrVer%%"${Char}"*}$Suffix$Char${CurrVer#*"$Char"}"
     echo $NewVer
     NewVer=
-    sed -i "1s/^/$NewVer\n\n  [ Roger C. Pao ]\n  * CONFIG_CXL_MEM_RAW_COMMANDS=y\n\n -- Roger C. Pao <roger.pao@smartm.com>  $(date +"%a, %d %b %Y %H:%M:%S %z")\n\n/" debian/changelog
+    sed -i "1s/^/$NewVer\n\n  [ Roger C. Pao ]\n  * CONFIG_CXL_MEM_RAW_COMMANDS=y and NVDIMM/DAX/PMEM options\n\n -- Roger C. Pao <roger.pao@smartm.com>  $(date +"%a, %d %b %Y %H:%M:%S %z")\n\n/" debian/changelog
     sed -i "1s/ trixie;/ local;/" debian/changelog
     head -n 10 debian/changelog
   fi
