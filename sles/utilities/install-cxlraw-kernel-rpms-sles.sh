@@ -140,28 +140,37 @@ download_rpms() {
 
 find_local_rpms() {
   shopt -s nullglob
-  local kernel_rpms=( "$RPM_DIR"/kernel-[0-9]*_"${KVER//-/_}"*.rpm )
-  local headers_rpms=( "$RPM_DIR"/kernel-headers-[0-9]*_"${KVER//-/_}"*.rpm )
+  local tag
+  tag="$(rpm_tag_from_kver "$KVER")"
+  # Names look like: kernel-6.4.0_150600.23.81_cxlraw_default-3.x86_64.rpm
+  local kernel_rpms=( "$RPM_DIR"/kernel-"${tag}"-*.rpm )
+  local headers_rpms=( "$RPM_DIR"/kernel-headers-"${tag}"-*.rpm )
 
   if [ -n "${KERNEL_RPM:-}" ] && [ -f "$KERNEL_RPM" ]; then
-    :
+    echo "==> Using KERNEL_RPM=${KERNEL_RPM}"
   elif [ "${#kernel_rpms[@]}" -ge 1 ]; then
+    echo "==> Found ${#kernel_rpms[@]} kernel RPM(s) for ${tag}:"
+    printf '    %s\n' "${kernel_rpms[@]}"
     KERNEL_RPM="$(pick_newest_rpm "${kernel_rpms[@]}")"
+    echo "==> Selected newest: ${KERNEL_RPM}"
   else
     default_rpm_names
   fi
 
   if [ ! -f "$KERNEL_RPM" ]; then
     echo "error: kernel RPM not found: ${KERNEL_RPM}" >&2
-    echo "       copy kernel-*.rpm to ${RPM_DIR} or set RPM_URL_BASE / KERNEL_RPM" >&2
+    echo "       copy kernel-${tag}-*.rpm to ${RPM_DIR} or set RPM_URL_BASE / KERNEL_RPM" >&2
     exit 1
   fi
 
   if [ "$WITH_HEADERS" = true ]; then
     if [ -n "${HEADERS_RPM:-}" ] && [ -f "$HEADERS_RPM" ]; then
-      :
+      echo "==> Using HEADERS_RPM=${HEADERS_RPM}"
     elif [ "${#headers_rpms[@]}" -ge 1 ]; then
+      echo "==> Found ${#headers_rpms[@]} kernel-headers RPM(s) for ${tag}:"
+      printf '    %s\n' "${headers_rpms[@]}"
       HEADERS_RPM="$(pick_newest_rpm "${headers_rpms[@]}")"
+      echo "==> Selected newest headers: ${HEADERS_RPM}"
     else
       default_rpm_names
     fi
