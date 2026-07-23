@@ -381,12 +381,18 @@ varies), for example:
 - `kernel-headers-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm`
 
 Install on another **SLES 15 SP6 x86_64** system with the same architecture.
-Copy the RPMs to `/tmp` on the target, then run
+Copy the **kernel** RPM (not kernel-headers) to `/tmp` on the target, then run
 `sles/utilities/install-cxlraw-kernel-rpms-sles.sh` (unsigned local `make binrpm-pkg`
-output):
+output).
+
+`kernel-headers-*.rpm` from `make binrpm-pkg` conflicts with SLES
+`linux-glibc-devel` (`/usr/include/linux/*`). The installer skips headers by
+default so the kernel RPM can install fully (modules under
+`/lib/modules/.../kernel/drivers/net`, etc.). Pass `--with-headers` only if you
+intentionally need those userspace headers.
 
 ```
-$ scp sles/kernel-rpms-*/*.rpm target:/tmp/
+$ scp sles/kernel-rpms-*/kernel-*cxlraw*.rpm target:/tmp/
 $ ssh target 'curl -fsSL https://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler/raw/main/sles/utilities/install-cxlraw-kernel-rpms-sles.sh | sudo bash -s -- -y'
 ```
 
@@ -397,17 +403,19 @@ $ sudo -v
 $ curl -fsSL https://gitlab-ub.memapd.internal/sgh/cxl-raw-enabler/raw/main/sles/utilities/install-cxlraw-kernel-rpms-sles.sh | sudo bash -s -- -y
 ```
 
-The script installs the RPMs (`rpm --nosignature`), enables unsupported
+The script installs the kernel RPM (`rpm --nosignature`), enables unsupported
 modules, rebuilds initrd with `dracut`, updates GRUB, and reboots. Options:
-`-y` to reboot without prompting, `--no-reboot` to skip reboot. Override
-`KVER` or `RPM_DIR` if needed; set `RPM_URL_BASE` to download RPMs instead of
+`-y` to reboot without prompting, `--no-reboot` to skip reboot,
+`--with-headers` to also install kernel-headers. Override `KVER`, `RPM_DIR`,
+or `KERNEL_RPM` if needed; set `RPM_URL_BASE` to download RPMs instead of
 using `/tmp`.
 
 Manual equivalent:
 
 ```
-$ sudo rpm -Uvh --replacepkgs --nosignature /tmp/kernel-*.rpm /tmp/kernel-headers-*.rpm
-# or: sudo zypper install --allow-unsigned-rpm /tmp/kernel-*.rpm
+$ sudo rpm -Uvh --replacepkgs --nosignature /tmp/kernel-*cxlraw*_default-*.x86_64.rpm
+# Do not install kernel-headers-*.rpm on SLES (conflicts with linux-glibc-devel).
+# or: sudo zypper install --allow-unsigned-rpm /tmp/kernel-*cxlraw*.rpm
 $ sudo cp /lib/modprobe.d/10-unsupported-modules.conf /etc/modprobe.d/
 $ sudo sed -i 's/allow_unsupported_modules 0/allow_unsupported_modules 1/' /etc/modprobe.d/10-unsupported-modules.conf
 $ sudo dracut -f /boot/initrd-6.4.0-150600.23.81-cxlraw-default 6.4.0-150600.23.81-cxlraw-default

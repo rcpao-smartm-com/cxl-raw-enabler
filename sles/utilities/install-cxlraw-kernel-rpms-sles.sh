@@ -8,33 +8,43 @@ RPM_DIR="${RPM_DIR:-/tmp}"
 RPM_URL_BASE="${RPM_URL_BASE:-}"
 AUTO_YES=false
 NO_REBOOT=false
+WITH_HEADERS=false
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [-y] [--no-reboot]
+Usage: $(basename "$0") [-y] [--no-reboot] [--with-headers]
 
-Install unsigned cxlraw kernel RPMs, enable unsupported modules, rebuild
+Install unsigned cxlraw kernel RPM, enable unsupported modules, rebuild
 initrd, and update GRUB.
+
+By default only the kernel RPM is installed. The companion kernel-headers
+RPM from make binrpm-pkg conflicts with SLES linux-glibc-devel
+(/usr/include/linux/*); omit it unless you pass --with-headers.
 
 Environment:
   KVER          Kernel release to boot (default: ${KVER})
   RPM_DIR       Directory with kernel RPMs (default: ${RPM_DIR})
-  RPM_URL_BASE  If set, download kernel + kernel-headers RPMs from this URL
-                prefix before install (filenames derived from KVER)
+  RPM_URL_BASE  If set, download kernel RPM from this URL prefix before
+                install (filename derived from KVER). With --with-headers,
+                also downloads kernel-headers.
+  KERNEL_RPM    Optional explicit path to kernel-*.rpm
+  HEADERS_RPM   Optional explicit path to kernel-headers-*.rpm
 
 Options:
-  -y, --yes       Reboot without prompting when install succeeds
-  --no-reboot     Skip reboot (print reminder instead)
-  -h, --help      Show this help
+  -y, --yes         Reboot without prompting when install succeeds
+  --no-reboot       Skip reboot (print reminder instead)
+  --with-headers    Also install kernel-headers (may conflict with
+                    linux-glibc-devel on SLES)
+  -h, --help        Show this help
 
 Examples:
-  scp kernel-rpms-*/*.rpm target:/tmp/
-  curl -fsSL https://example/cxl-raw-enabler/raw/main/sles/utilities/install-cxlraw-kernel-rpms-sles.sh | sudo bash
+  scp kernel-rpms-*/kernel-*cxlraw*.rpm \\
+      utilities/install-cxlraw-kernel-rpms-sles.sh target:/tmp/
+  ssh target 'chmod +x /tmp/install-cxlraw-kernel-rpms-sles.sh'
+  ssh target 'sudo /tmp/install-cxlraw-kernel-rpms-sles.sh --no-reboot'
 
-  curl -fsSL https://example/.../sles/utilities/install-cxlraw-kernel-rpms-sles.sh | sudo bash -s -- -y
-
-  RPM_URL_BASE=https://files.example/kernel-rpms \\
-    curl -fsSL https://example/.../sles/utilities/install-cxlraw-kernel-rpms-sles.sh | sudo bash
+  curl -fsSL https://example/.../sles/utilities/install-cxlraw-kernel-rpms-sles.sh \\
+    | sudo bash -s -- -y
 EOF
 }
 
@@ -45,6 +55,9 @@ while [ $# -gt 0 ]; do
       ;;
     --no-reboot)
       NO_REBOOT=true
+      ;;
+    --with-headers)
+      WITH_HEADERS=true
       ;;
     -h|--help)
       usage
@@ -96,12 +109,33 @@ default_rpm_names() {
   HEADERS_RPM="${RPM_DIR}/kernel-headers-${tag}-1.x86_64.rpm"
 }
 
+# Prefer highest RPM release N in kernel-...-N.x86_64.rpm
+pick_newest_rpm() {
+  local newest="" newest_n=-1 f base n
+  for f in "$@"; do
+    [ -f "$f" ] || continue
+    base=$(basename "$f" .rpm)
+    n="${base##*-}"
+    n="${n%%.*}"
+    if [[ "$n" =~ ^[0-9]+$ ]] && [ "$n" -gt "$newest_n" ]; then
+      newest_n=$n
+      newest=$f
+    elif [ -z "$newest" ]; then
+      newest=$f
+    fi
+  done
+  echo "$newest"
+}
+
 download_rpms() {
   default_rpm_names
   local base="${RPM_URL_BASE%/}"
-  echo "==> Downloading RPMs from ${base}/"
+  echo "==> Downloading kernel RPM from ${base}/"
   curl -fsSL -o "$KERNEL_RPM" "${base}/$(basename "$KERNEL_RPM")"
-  curl -fsSL -o "$HEADERS_RPM" "${base}/$(basename "$HEADERS_RPM")"
+  if [ "$WITH_HEADERS" = true ]; then
+    echo "==> Downloading kernel-headers RPM from ${base}/"
+    curl -fsSL -o "$HEADERS_RPM" "${base}/$(basename "$HEADERS_RPM")"
+  fi
 }
 
 find_local_rpms() {
@@ -112,34 +146,46 @@ find_local_rpms() {
   if [ -n "${KERNEL_RPM:-}" ] && [ -f "$KERNEL_RPM" ]; then
     :
   elif [ "${#kernel_rpms[@]}" -ge 1 ]; then
-    KERNEL_RPM="${kernel_rpms[0]}"
+    KERNEL_RPM="$(pick_newest_rpm "${kernel_rpms[@]}")"
   else
-    default_rpm_names
-  fi
-
-  if [ -n "${HEADERS_RPM:-}" ] && [ -f "$HEADERS_RPM" ]; then
-    :
-  elif [ "${#headers_rpms[@]}" -ge 1 ]; then
-    HEADERS_RPM="${headers_rpms[0]}"
-  elif [ -z "${HEADERS_RPM:-}" ]; then
     default_rpm_names
   fi
 
   if [ ! -f "$KERNEL_RPM" ]; then
     echo "error: kernel RPM not found: ${KERNEL_RPM}" >&2
-    echo "       copy RPMs to ${RPM_DIR} or set RPM_URL_BASE" >&2
+    echo "       copy kernel-*.rpm to ${RPM_DIR} or set RPM_URL_BASE / KERNEL_RPM" >&2
     exit 1
   fi
-  if [ ! -f "$HEADERS_RPM" ]; then
-    echo "error: kernel-headers RPM not found: ${HEADERS_RPM}" >&2
-    echo "       copy RPMs to ${RPM_DIR} or set RPM_URL_BASE" >&2
-    exit 1
+
+  if [ "$WITH_HEADERS" = true ]; then
+    if [ -n "${HEADERS_RPM:-}" ] && [ -f "$HEADERS_RPM" ]; then
+      :
+    elif [ "${#headers_rpms[@]}" -ge 1 ]; then
+      HEADERS_RPM="$(pick_newest_rpm "${headers_rpms[@]}")"
+    else
+      default_rpm_names
+    fi
+    if [ ! -f "$HEADERS_RPM" ]; then
+      echo "error: kernel-headers RPM not found: ${HEADERS_RPM}" >&2
+      echo "       omit --with-headers, or copy headers RPM / set HEADERS_RPM" >&2
+      exit 1
+    fi
+  else
+    HEADERS_RPM=""
   fi
 }
 
 install_rpms() {
-  echo "==> Installing ${KERNEL_RPM} ${HEADERS_RPM}"
-  rpm -Uvh --replacepkgs --nosignature "$KERNEL_RPM" "$HEADERS_RPM"
+  echo "==> Installing ${KERNEL_RPM}"
+  rpm -Uvh --replacepkgs --nosignature "$KERNEL_RPM"
+  if [ "$WITH_HEADERS" = true ]; then
+    echo "==> Installing ${HEADERS_RPM}"
+    echo "    note: may conflict with linux-glibc-devel on SLES"
+    rpm -Uvh --replacepkgs --nosignature "$HEADERS_RPM"
+  else
+    echo "==> Skipping kernel-headers (conflicts with linux-glibc-devel on SLES)."
+    echo "    Pass --with-headers only if you need those userspace headers."
+  fi
 }
 
 allow_unsupported_modules() {
@@ -181,18 +227,43 @@ rebuild_initrd() {
 }
 
 update_grub() {
-  echo "==> Updating GRUB"
-  grub2-mkconfig -o /boot/grub2/grub.cfg
+  local grub_cfg=/boot/grub2/grub.cfg
+  echo "==> Updating GRUB (${grub_cfg})"
+  grub2-mkconfig -o "$grub_cfg"
+  if command -v update-bootloader >/dev/null; then
+    echo "==> Refreshing bootloader (update-bootloader --refresh)"
+    update-bootloader --refresh
+  fi
+  if grep -qF "$KVER" "$grub_cfg" 2>/dev/null; then
+    echo "==> GRUB lists ${KVER}"
+  else
+    echo "warning: ${KVER} not found in ${grub_cfg}; check /boot/vmlinuz-${KVER}" >&2
+  fi
 }
 
 verify_boot_files() {
+  local moddir="/lib/modules/${KVER}"
+
   if [ ! -f "/boot/vmlinuz-${KVER}" ]; then
     echo "error: /boot/vmlinuz-${KVER} not found after install" >&2
     exit 1
   fi
+  if [ ! -d "$moddir/kernel" ]; then
+    echo "error: ${moddir}/kernel not found after install" >&2
+    exit 1
+  fi
+  if [ ! -d "$moddir/kernel/drivers/net" ]; then
+    echo "error: ${moddir}/kernel/drivers/net missing; kernel RPM install looks incomplete" >&2
+    echo "       re-run after fixing RPM install (do not install conflicting kernel-headers)" >&2
+    exit 1
+  fi
+
   echo ""
   echo "Boot images in /boot:"
   ls -1 /boot/vmlinuz-* 2>/dev/null || true
+  echo ""
+  echo "Module tree: ${moddir}/kernel/drivers/ (sample):"
+  ls "$moddir/kernel/drivers" | head -20
   echo ""
   echo "GRUB should list ${KVER} for CXL raw commands."
   grep -q "CONFIG_CXL_MEM_RAW_COMMANDS=y" "/boot/config-${KVER}" 2>/dev/null \
