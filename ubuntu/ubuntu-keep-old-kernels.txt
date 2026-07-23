@@ -1,0 +1,41 @@
+
+Thu Jul 23 10:37:54 AM PDT 2026
+
+https://share.google/aimode/8fGU0ZoenHZPqhqxJ
+
+
+AI Overview
+To stop your Ubuntu system from automatically removing old kernels, you need to disable the Unattended-Upgrade::Remove-New-Unused-Dependencies setting in the apt configuration and prevent apt autoremove from running automatically. 
+Open your terminal in Laguna Niguel and edit the unattended-upgrades config file:
+bash
+
+sudo nano /etc/apt/apt.conf.d/50unattended-upgrades
+
+Find the following line (uncommented):
+text
+
+Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
+
+Change it to "false":
+text
+
+Unattended-Upgrade::Remove-New-Unused-Dependencies "false";
+
+Save and close the file. Next, you can configure your apt periodic settings to prevent automatic cleanup: 
+bash
+
+sudo nano /etc/apt/apt.conf.d/20auto-upgrades
+
+Set Unattended-Upgrade to 0: 
+text
+
+APT::Periodic::Unattended-Upgrade "0";
+APT::Periodic::AutocleanInterval "0";
+
+Save and exit. These exact steps ensure your system retains old kernels for manual fallback.
+
+
+For a visual guide on managing background updates and the Update Manager:
+
+https://www.google.com/url?sa=i&source=web&rct=j&url=https://www.youtube.com/watch?v%3DAcMgk4AbWD8%26t%3D71&ved=2ahUKEwjby_aQqemVAxWaJkQIHWX7DQEQ__QQegoIAggACAAIEBAH&opi=89978449&cd&psig=AOvVaw0gIRRPjpoIEwi1on8A2FDZ&ust=1784914050877000
+
