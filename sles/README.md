@@ -70,12 +70,6 @@ After a successful kernel build on the build host (from the repo root):
 $ ./sles/utilities/build-kernel-rpms-sles.sh
 ```
 
-Or from `sles/`:
-
-```
-$ ./utilities/build-kernel-rpms-sles.sh
-```
-
 Built RPMs are copied to `sles/kernel-rpms-6.4.0-150600.23.81-cxlraw-default/` (version
 varies), for example:
 
@@ -85,16 +79,23 @@ varies), for example:
 ### Install RPMs on another system (quick / short)
 
 Copy the kernel RPM and `utilities/sles-kernel-cxlraw-install.sh` into the
-**same directory** on the target (the script installs the RPM from cwd).
+**same directory** on the target system with the same architecture (the script installs the RPM from cwd).
 Does **not** reboot — reboot manually when ready.
 
 ```
-$ cd sles/
-$ rsync -av \
-    kernel-rpms-6.4.0-150600.23.81-cxlraw-default/kernel-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm \
-    utilities/sles-kernel-cxlraw-install.sh \
-    username@sles15sp6:
 $ ssh username@sles15sp6
+$ ls -al
+total 1057844
+drwxr-xr-x 2 rcpao users       4096 Jul 30 23:09 .
+drwxr-xr-x 4 rcpao users       4096 Jul 30 14:19 ..
+-rw-r--r-- 1 rcpao users 1081774508 Jul 12 21:15 kernel-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm
+-rw-r--r-- 1 rcpao users    1431844 Jul 12 21:16 kernel-headers-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm
+-rw-r--r-- 1 rcpao users        344 Jul 30 23:09 SHA256SUM
+-rwxr-xr-x 1 rcpao users        811 Jul 30 23:07 sles-kernel-cxlraw-install.sh
+$ sha256sum -c SHA256SUM
+kernel-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm: OK
+kernel-headers-6.4.0_150600.23.81_cxlraw_default-1.x86_64.rpm: OK
+sles-kernel-cxlraw-install.sh: OK
 $ sudo ./sles-kernel-cxlraw-install.sh
 $ sudo reboot
 ```
