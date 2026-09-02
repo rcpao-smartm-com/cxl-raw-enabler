@@ -156,6 +156,22 @@ ioctl returns `-ENODEV` if the device has no secondary mailbox. Kernel
 identify / events / regions stay on the primary mailbox.
 
 
+## ub26-7.0.0.sh
+
+Ubuntu 26.04 distro kernel 7.0.0 (for example `7.0.0-30-generic`)
+
+Uses the running kernel and `linux-headers-$(uname -r)`; no mainline
+kernel install or reboot is required before building.
+
+Run to compile and install cxl-raw kernel drivers for the current kernel.
+Reboot if modules were in use and could not be reloaded cleanly.
+Test cxl raw drivers: e.g. mchip_cxl_cci --sss_get
+
+This script applies `patches/v7.0/` so `/dev/cxl/memN` can send CCI on
+the device Secondary Mailbox. After the modules load, use the same
+secondary-mailbox checks and examples as `ub24-6.17.0.sh` above.
+
+
 ## cxl-raw-fedora.sh
 
 Fedora 41-43: 

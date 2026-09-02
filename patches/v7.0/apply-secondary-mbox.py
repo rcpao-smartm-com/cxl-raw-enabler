@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Apply Secondary Mailbox CCI send support to a Linux v6.17 CXL tree.
+"""Apply Secondary Mailbox CCI send support to a Linux v7.0 CXL tree.
 
 Usage:
   python3 apply-secondary-mbox.py /path/to/linux
 
 Idempotent: safe to re-run. Exits 0 if already applied or after a successful
-apply. Targets the v6.17 CXL layout used by ub24-6.17.0.sh.
+apply. Targets the v7.0 CXL layout used by ub26-7.0.0.sh.
 """
 from __future__ import annotations
 
