@@ -48,16 +48,26 @@ sudo apt-get update
 sudo apt-get -y install linux-headers-$(uname -r)
 sudo apt-get -y --fix-broken install
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 mkdir -p ~/kernel-work && cd ~/kernel-work
 
 [ ! -d linux ] && git clone --no-checkout https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 cd linux
 git sparse-checkout init --cone
-git sparse-checkout set drivers/cxl include/linux/cxl.h
+git sparse-checkout set drivers/cxl include/linux/cxl.h include/uapi/linux/cxl_mem.h
 
 git checkout v6.17
+# Start from clean v6.17 CXL sources if this script is re-run.
+git checkout --force -- drivers/cxl include/uapi/linux/cxl_mem.h 2>/dev/null || true
+
+# Map Secondary Mailbox and allow CXL_MEM_SEND_COMMAND to target it.
+python3 "${SCRIPT_DIR}/patches/v6.17/apply-secondary-mbox.py" "$(pwd)"
 
 sudo cp -r drivers/cxl/* /lib/modules/$(uname -r)/build/drivers/cxl/
+if [ -f include/uapi/linux/cxl_mem.h ]; then
+  sudo cp include/uapi/linux/cxl_mem.h /lib/modules/$(uname -r)/build/include/uapi/linux/cxl_mem.h
+fi
 
 cd /lib/modules/$(uname -r)/build/drivers/cxl
 ls -la

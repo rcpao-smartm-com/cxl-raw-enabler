@@ -130,6 +130,31 @@ Re-run to compile the cxl-raw kernel drivers.
 Reboot.
 Test cxl raw drivers: e.g. mchip_cxl_cci --sss_get
 
+This script also applies `patches/v6.17/` so `/dev/cxl/memN` can send CCI
+on the device Secondary Mailbox. After the modules load:
+
+```
+# 0 = not present; non-zero = secondary payload bytes
+cat /sys/bus/cxl/devices/mem0/secondary_payload_max
+
+# Identify (opcode 0x0001) on the Secondary Mailbox
+gcc -O2 -o cxl-send-secondary examples/cxl-send-secondary.c
+sudo ./cxl-send-secondary /dev/cxl/mem0 0x0001
+```
+
+In `mchip_cxl_cci`, put `--secondary_mailbox` (or `-S`) **before** the CCI command:
+
+```
+mchip_cxl_cci --secondary_mailbox --sss_get
+mchip_cxl_cci -S --identify
+```
+
+Any `CXL_MEM_SEND_COMMAND` client can set `send.flags |= (1u << 16)`
+(`CXL_MEM_SEND_FLAG_SECONDARY_MBOX`).
+
+ioctl returns `-ENODEV` if the device has no secondary mailbox. Kernel
+identify / events / regions stay on the primary mailbox.
+
 
 ## cxl-raw-fedora.sh
 
