@@ -34,11 +34,22 @@ sudo apt-get -y install linux-headers-${UNAME_R}
 sudo apt-get -y --fix-broken install
 
 # Match the compiler used to build the running kernel.
-GCCVERSTR=$(grep -Eo 'gcc-[0-9]+' /boot/config-${UNAME_R})
+# 22.04/24.04: CONFIG_CC_VERSION_TEXT="...gcc-12 ..." / "...gcc-13 ..."
+# 26.04: CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc (Ubuntu 15.2.0-...) 15.2.0"
+GCCVERSTR=$(grep -Eo 'gcc-[0-9]+' /boot/config-${UNAME_R} || true)
+if [[ -z "${GCCVERSTR}" ]]; then
+	GCCVERNUM=$(sed -n 's/^CONFIG_CC_VERSION_TEXT=.*"\([^"]*\)"/\1/p' /boot/config-${UNAME_R} \
+		| grep -Eo '[0-9]+\.[0-9]+' | head -1 | cut -d. -f1 || true)
+	[[ -n "${GCCVERNUM}" ]] && GCCVERSTR="gcc-${GCCVERNUM}"
+fi
+if [[ -z "${GCCVERSTR}" ]]; then
+	echo "error $0:$LINENO: could not parse gcc version from /boot/config-${UNAME_R}" >&2
+	exit $LINENO
+fi
 GCCVERNUM=${GCCVERSTR#gcc-}
 sudo apt-get -y install ${GCCVERSTR}
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/${GCCVERSTR} ${GCCVERNUM}
-yes "" | sudo update-alternatives --config gcc
+sudo update-alternatives --set gcc /usr/bin/${GCCVERSTR}
 gcc --version
 
 [ -d /lib/modules/${UNAME_R}/build ] || {
@@ -126,25 +137,34 @@ sudo cp drivers/cxl/cxl_*.ko /lib/modules/${UNAME_R}/updates/drivers/cxl/
 # Update module dependencies
 sudo depmod -a
 
-sudo lsmod | grep cxl | awk '{print $1}' | xargs -r -n1 sudo modprobe -r
+# Unload in reverse dependency order. In-use modules (live CXL device) are not
+# fatal — new .ko files are already in updates/; reboot will load them.
+for _m in cxl_mem cxl_pci cxl_acpi cxl_pmem cxl_port cxl_core; do
+	sudo modprobe -r "${_m}" || true
+done
+unset _m
 
-sudo modprobe cxl_acpi && sudo modprobe cxl_pci && sudo modprobe cxl_mem
+if ! sudo modprobe cxl_acpi || ! sudo modprobe cxl_pci || ! sudo modprobe cxl_mem; then
+	echo "warning $0:$LINENO: could not reload CXL modules (likely in use); reboot to load updates/" >&2
+fi
 
 sudo update-initramfs -u
 
-lsmod | grep cxl
+lsmod | grep cxl || true
 
-ls -la /dev/cxl/
+ls -la /dev/cxl/ || true
 
-hexdump -C /lib/modules/${UNAME_R}/updates/drivers/cxl/core/cxl_core.ko | grep -A 3 -B 3 "02 00 00 00.*ff ff ff ff.*ff ff ff ff"
+# Optional sanity hexdump (pattern may not match stripped/BTF-less builds).
+hexdump -C /lib/modules/${UNAME_R}/updates/drivers/cxl/core/cxl_core.ko \
+	| grep -A 3 -B 3 "02 00 00 00.*ff ff ff ff.*ff ff ff ff" || true
 
 # Verify debugfs is mounted
-mount | grep debugfs
+mount | grep debugfs || true
 # Check for CXL RAW commands control
-sudo ls -la /sys/kernel/debug/cxl/mbox/
+sudo ls -la /sys/kernel/debug/cxl/mbox/ || true
 # Should show: raw_allow_all
 # Check current RAW commands status
-sudo cat /sys/kernel/debug/cxl/mbox/raw_allow_all
+sudo cat /sys/kernel/debug/cxl/mbox/raw_allow_all || true
 # Shows: N (disabled) or Y (enabled)
 # Enable RAW Commands (Optional)
 # Enable RAW commands for testing
@@ -152,3 +172,5 @@ echo Y | sudo tee /sys/kernel/debug/cxl/mbox/raw_allow_all
 # Verify enabled
 sudo cat /sys/kernel/debug/cxl/mbox/raw_allow_all
 # Should show: Y
+
+echo "Done. CXL modules installed under /lib/modules/${UNAME_R}/updates/drivers/cxl/"
