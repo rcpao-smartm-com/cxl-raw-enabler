@@ -62,14 +62,31 @@ source /etc/os-release
 # https://wiki.crowncloud.net/?Installing_the_Linux_Kernel_6x_on_AlmaLinux_9
 # WARNING: elrepo.org kernel-ml is unsigned.  Secure Boot must be disabled.
 
+# Query latest elrepo kernel version for a branch (lt/ml), if available.
+get_latest_elrepo_kernel_version() {
+  local branch=$1
+  sudo dnf -q --refresh --enablerepo=elrepo-kernel repoquery \
+    --latest-limit=1 \
+    --qf '%{VERSION}-%{RELEASE}.%{ARCH}' \
+    "kernel-${branch}" 2>/dev/null | head -n 1
+}
+
 # elrepo kernel branch
 # KERNEL_BRANCH=lt # long term
 # KERNEL_BRANCH=ml # mainline
 KERNEL_BRANCH=$1 # "lt" or "ml"
+ELREPO_READY=0
 if [[ "$KERNEL_BRANCH"  !=  "lt" && ( "$KERNEL_BRANCH"  !=  "ml" ) ]]; then
+  sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+  sudo dnf -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
+  ELREPO_READY=1
+  LATEST_LT=$(get_latest_elrepo_kernel_version lt)
+  LATEST_ML=$(get_latest_elrepo_kernel_version ml)
+  LT_DISPLAY=${LATEST_LT:-unknown}
+  ML_DISPLAY=${LATEST_ML:-unknown}
   # https://stackoverflow.com/a/226724
   while true; do
-    read -p "Install which kernel [l]ongterm (6.1.119-1.el9.elrepo+) / [m]ainline (6.12.2-1.el9.elrepo+)? " LM
+    read -p "Install which kernel [l]ongterm (${LT_DISPLAY}) / [m]ainline (${ML_DISPLAY})? " LM
     case $LM in
       [Ll]* ) KERNEL_BRANCH=lt; break;;
       [Mm]* ) KERNEL_BRANCH=ml; break;;
@@ -78,8 +95,11 @@ if [[ "$KERNEL_BRANCH"  !=  "lt" && ( "$KERNEL_BRANCH"  !=  "ml" ) ]]; then
   done
 fi
 
-sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
-sudo dnf -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
+if [ "$ELREPO_READY" -eq 0 ]; then
+  sudo rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+  sudo dnf -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
+fi
+
 sudo dnf -y --enablerepo=elrepo-kernel --refresh upgrade kernel-${KERNEL_BRANCH} kernel-${KERNEL_BRANCH}-devel # upgrade --refresh pulls the latest elrepo metadata and upgrades if a newer kernel is already installed.
 sudo dnf -y --enablerepo=elrepo-kernel install kernel-${KERNEL_BRANCH} kernel-${KERNEL_BRANCH}-devel # A follow-up install covers first-time installs (upgrade alone won't install an absent package).
 
