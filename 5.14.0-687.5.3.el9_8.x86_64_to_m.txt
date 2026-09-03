@@ -1,0 +1,74 @@
+Script started on 2026-09-03 08:26:09-07:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="80" LINES="24"]
+]0;rcpao@rh98-038x:~/Documents/job/sgh/git-repo/cxl-raw-enabler[?2004h[rcpao@rh98-038x cxl-raw-enabler]$ exit[2Pfgls /boot/./el9-kernel.sh 
+[?2004l[sudo] password for rcpao: 
+Sorry, try again.
+[sudo] password for rcpao: 
+Updating Subscription Management repositories.
+[?25l| Checking server status[0K/ Checking server status[0K[?25hLast metadata expiration check: 0:04:01 ago on Thu 03 Sep 2026 08:22:29 AM PDT.
+elrepo-release-9.el9     [===                 ] ---  B/s |   0  B     --:-- ETAelrepo-release-9.el9.elrepo.noarch.rpm          141 kB/s |  18 kB     00:00    
+Package elrepo-release-9.5-2.el9.elrepo.noarch is already installed.
+Dependencies resolved.
+Nothing to do.
+Complete!
+Install which kernel [l]ongterm (6.1.187-1.el9.elrepo.x86_64) / [m]ainline (7.2.3-1.el9.elrepo.x86_64)? m
+Updating Subscription Management repositories.
+[?25l| Checking server status[0K/ Checking server status[?25h[0KELRepo.org Community     [===                 ] ---  B/s |   0  B     --:-- ETAELRepo.org Community     [===                 ] ---  B/s |   0  B     --:-- ETAELRepo.org Community Enterprise Linux Repositor 6.5 kB/s | 3.0 kB     00:00    
+ELRepo.org Community     [   ===              ] ---  B/s |   0  B     --:-- ETAELRepo.org Community     [      ===           ] ---  B/s |   0  B     --:-- ETAELRepo.org Community Enterprise Linux Kernel Re 6.5 kB/s | 3.0 kB     00:00    
+Red Hat Enterprise L     [         ===        ] ---  B/s |   0  B     --:-- ETARed Hat Enterprise L100% [====================]  11 kB/s | 4.5 kB     00:00 ETARed Hat Enterprise Linux 9 for x86_64 - AppStre  11 kB/s | 4.5 kB     00:00    
+Red Hat Enterprise L     [            ===     ] ---  B/s |   0  B     --:-- ETARed Hat Enterprise L100% [====================]  12 kB/s | 4.1 kB     00:00 ETARed Hat Enterprise Linux 9 for x86_64 - BaseOS   12 kB/s | 4.1 kB     00:00    
+Dependencies resolved.
+Nothing to do.
+Complete!
+Updating Subscription Management repositories.
+[?25l| Checking server status[0K[?25hLast metadata expiration check: 0:00:05 ago on Thu 03 Sep 2026 08:26:57 AM PDT.
+Package kernel-ml-7.2.3-1.el9.elrepo.x86_64 is already installed.
+Package kernel-ml-devel-7.2.3-1.el9.elrepo.x86_64 is already installed.
+Dependencies resolved.
+Nothing to do.
+Complete!
+Use grubby to select the default kernel for GRUB to boot:
+index=0
+kernel="/boot/vmlinuz-7.2.3-1.el9.elrepo.x86_64"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet $tuned_params"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-7.2.3-1.el9.elrepo.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (7.2.3-1.el9.elrepo.x86_64) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-7.2.3-1.el9.elrepo.x86_64"
+index=1
+kernel="/boot/vmlinuz-6.1.187-1.el9.elrepo.x86_64"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet $tuned_params"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-6.1.187-1.el9.elrepo.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (6.1.187-1.el9.elrepo.x86_64) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-6.1.187-1.el9.elrepo.x86_64"
+index=2
+kernel="/boot/vmlinuz-5.14.0-687.42.1.el9_8.x86_64"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet $tuned_params"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-5.14.0-687.42.1.el9_8.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (5.14.0-687.42.1.el9_8.x86_64) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-5.14.0-687.42.1.el9_8.x86_64"
+index=3
+kernel="/boot/vmlinuz-5.14.0-687.5.3.el9_8.x86_64"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet $tuned_params"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-5.14.0-687.5.3.el9_8.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (5.14.0-687.5.3.el9_8.x86_64) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-5.14.0-687.5.3.el9_8.x86_64"
+index=4
+kernel="/boot/vmlinuz-0-rescue-54d9f898e283428a85893d861d0afb07"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-0-rescue-54d9f898e283428a85893d861d0afb07.img"
+title="Red Hat Enterprise Linux (0-rescue-54d9f898e283428a85893d861d0afb07) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-0-rescue"
+'grubby --default-index' returns 1
+as the current default boot index.
+Run 'sudo grubby --set-default-index=#' where # is the new default boot index.
+
+You must disable Secure Boot to run elrepo kernels as they are unsigned.
+Reboot to the new 7.2.3-1.el9.elrepo.x86_64 kernel (y/n)? n
+]0;rcpao@rh98-038x:~/Documents/job/sgh/git-repo/cxl-raw-enabler[?2004h[rcpao@rh98-038x cxl-raw-enabler]$ exit
+[?2004lexit
+
+Script done on 2026-09-03 08:27:13-07:00 [COMMAND_EXIT_CODE="0"]

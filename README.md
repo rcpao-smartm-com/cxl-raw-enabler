@@ -193,17 +193,17 @@ Unfortunately, it is not possible to checkout the source code of the
 currently running kernel version. [If you figure out how, please let me
 know, and I will modify this script!]
 
-This script enables the following:  
-CONFIG_ACPI_NFIT=y  
-CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y  
-# CONFIG_TRANSPARENT_HUGEPAGE_MADVISE is not set  
-CONFIG_CXL_MEM_RAW_COMMANDS=y  
-CONFIG_CXL_REGION_INVALIDATION_TEST=y  
-CONFIG_DEV_DAX=y  
-CONFIG_ND_BTT=y  
-CONFIG_NVDIMM_SECURITY_TEST=y  
-CONFIG_BLK_DEV_PMEM=y  
-CONFIG_IO_STRICT_DEVMEM=y  
+This script enables the following:
+- `CONFIG_ACPI_NFIT=y`
+- `CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y`
+- `# CONFIG_TRANSPARENT_HUGEPAGE_MADVISE is not set`
+- `CONFIG_CXL_MEM_RAW_COMMANDS=y`
+- `CONFIG_CXL_REGION_INVALIDATION_TEST=y`
+- `CONFIG_DEV_DAX=y`
+- `CONFIG_ND_BTT=y`
+- `CONFIG_NVDIMM_SECURITY_TEST=y`
+- `CONFIG_BLK_DEV_PMEM=y`
+- `CONFIG_IO_STRICT_DEVMEM=y`
 
 This script will build and install the new kernel RPMs.
 
@@ -225,10 +225,11 @@ GRUB_TERMINAL_OUTPUT="console"
 # GRUB_CMDLINE_LINUX="memhp_default_state=offline"
 GRUB_CMDLINE_LINUX=""
 # GRUB_DISABLE_RECOVERY="true"
+GRUB_DISABLE_RECOVERY="false"
 GRUB_ENABLE_BLSCFG=true
 
 # https://unix.stackexchange.com/a/639039/325763
-# sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+sudo grub2-mkconfig -o /boot/grub2/grub.cfg
 # https://discussion.fedoraproject.org/t/how-to-get-grub-menu-to-show/91947/2
 # sudo grub2-editenv - unset menu_auto_hide
 

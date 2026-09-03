@@ -1,0 +1,147 @@
+Script started on 2026-09-03 08:21:16-07:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="80" LINES="24"]
+]0;rcpao@rh98-038x:~/Documents/job/sgh/git-repo/cxl-raw-enabler[?2004h[rcpao@rh98-038x cxl-raw-enabler]$ ./el9-kernel.sh 
+[?2004l[sudo] password for rcpao: 
+Updating Subscription Management repositories.
+[?25l| Checking server status[0K/ Checking server status[0K- Checking server status[0K[?25hLast metadata expiration check: 0:44:46 ago on Thu 03 Sep 2026 07:36:44 AM PDT.
+elrepo-release-9.el9     [===                 ] ---  B/s |   0  B     --:-- ETAelrepo-release-9.el9.elrepo.noarch.rpm          146 kB/s |  18 kB     00:00    
+Package elrepo-release-9.5-2.el9.elrepo.noarch is already installed.
+Dependencies resolved.
+Nothing to do.
+Complete!
+Install which kernel [l]ongterm (6.1.187-1.el9.elrepo.x86_64) / [m]ainline (7.2.3-1.el9.elrepo.x86_64)? ls ex	a	^A        ^Z
+[1]+  Stopped                 ./el9-kernel.sh
+]0;rcpao@rh98-038x:~/Documents/job/sgh/git-repo/cxl-raw-enabler[?2004h[rcpao@rh98-038x cxl-raw-enabler]$ ls /boot/
+[?2004lconfig-5.14.0-687.42.1.el9_8.x86_64
+config-5.14.0-687.5.3.el9_8.x86_64
+config-7.2.3-1.el9.elrepo.x86_64
+[0m[01;34mefi[0m
+[01;34mgrub2[0m
+initramfs-0-rescue-54d9f898e283428a85893d861d0afb07.img
+initramfs-5.14.0-687.42.1.el9_8.x86_64.img
+initramfs-5.14.0-687.5.3.el9_8.x86_64.img
+initramfs-5.14.0-687.5.3.el9_8.x86_64kdump.img
+initramfs-7.2.3-1.el9.elrepo.x86_64.img
+[01;34mloader[0m
+[01;36msymvers-5.14.0-687.42.1.el9_8.x86_64.gz[0m
+[01;36msymvers-5.14.0-687.5.3.el9_8.x86_64.gz[0m
+[01;36msymvers-7.2.3-1.el9.elrepo.x86_64.gz[0m
+System.map-5.14.0-687.42.1.el9_8.x86_64
+System.map-5.14.0-687.5.3.el9_8.x86_64
+System.map-7.2.3-1.el9.elrepo.x86_64
+[01;32mvmlinuz-0-rescue-54d9f898e283428a85893d861d0afb07[0m
+[01;32mvmlinuz-5.14.0-687.42.1.el9_8.x86_64[0m
+[01;32mvmlinuz-5.14.0-687.5.3.el9_8.x86_64[0m
+[01;32mvmlinuz-7.2.3-1.el9.elrepo.x86_64[0m
+]0;rcpao@rh98-038x:~/Documents/job/sgh/git-repo/cxl-raw-enabler[?2004h[rcpao@rh98-038x cxl-raw-enabler]$ fg
+[?2004l./el9-kernel.sh
+l
+Updating Subscription Management repositories.
+[?25l| Checking server status[?25h[0KELRepo.org Community     [===                 ] ---  B/s |   0  B     --:-- ETAELRepo.org Community     [===                 ] ---  B/s |   0  B     --:-- ETAELRepo.org Community Enterprise Linux Repositor 6.5 kB/s | 3.0 kB     00:00    
+ELRepo.org Community     [   ===              ] ---  B/s |   0  B     --:-- ETAELRepo.org Community     [      ===           ] ---  B/s |   0  B     --:-- ETAELRepo.org Community Enterprise Linux Kernel Re 6.7 kB/s | 3.0 kB     00:00    
+Red Hat Enterprise L     [         ===        ] ---  B/s |   0  B     --:-- ETARed Hat Enterprise Linux 9 for x86_64 - AppStre  16 kB/s | 4.5 kB     00:00    
+Red Hat Enterprise L     [            ===     ] ---  B/s |   0  B     --:-- ETARed Hat Enterprise Linux 9 for x86_64 - BaseOS   18 kB/s | 4.1 kB     00:00    
+Package kernel-lt available, but not installed.
+No match for argument: [1mkernel-lt(B[m
+Package kernel-lt-devel available, but not installed.
+No match for argument: [1mkernel-lt-devel(B[m
+Error: No packages marked for upgrade.
+Updating Subscription Management repositories.
+[?25l| Checking server status[0K/ Checking server status[?25h[0KLast metadata expiration check: 0:00:05 ago on Thu 03 Sep 2026 08:22:29 AM PDT.
+Dependencies resolved.
+================================================================================
+ Package              Arch      Version                  Repository        Size
+================================================================================
+Installing:
+ [1m[32mkernel-lt           (B[m x86_64    6.1.187-1.el9.elrepo     elrepo-kernel     19 k
+ [1m[32mkernel-lt-devel     (B[m x86_64    6.1.187-1.el9.elrepo     elrepo-kernel     15 M
+Installing dependencies:
+ [1m[32mkernel-lt-core      (B[m x86_64    6.1.187-1.el9.elrepo     elrepo-kernel     46 M
+ [1m[32mkernel-lt-modules   (B[m x86_64    6.1.187-1.el9.elrepo     elrepo-kernel     45 M
+
+Transaction Summary
+================================================================================
+Install  4 Packages
+
+Total download size: 107 M
+Installed size: 192 M
+Downloading Packages:
+                         [===                 ] ---  B/s |   0  B     --:-- ETA(1/4): kernel-lt-6.1  0% [                    ] ---  B/s |   0  B     --:-- ETA(1-3/4): kernel-lt-d  0% [                    ]  89 kB/s |  28 kB     20:25 ETA(1/4): kernel-lt-6.1.187-1.el9.elrepo.x86_64.rp  42 kB/s |  19 kB     00:00    
+(2-3/4): kernel-lt-d  0% [                    ]  96 kB/s |  75 kB     18:54 ETA(2-4/4): kernel-lt-m  0% [                    ] 183 kB/s | 547 kB     09:53 ETA(2-4/4): kernel-lt-c  2% [                    ] 515 kB/s | 2.2 MB     03:27 ETA(2-4/4): kernel-lt-c  4% [-                   ] 1.0 MB/s | 4.8 MB     01:42 ETA(2-4/4): kernel-lt-c  7% [=                   ] 1.6 MB/s | 8.0 MB     01:03 ETA(2-4/4): kernel-lt-d 10% [==                  ] 2.2 MB/s |  11 MB     00:44 ETA(2-4/4): kernel-lt-d 13% [==-                 ] 2.7 MB/s |  15 MB     00:34 ETA(2-4/4): kernel-lt-d 17% [===-                ] 3.4 MB/s |  19 MB     00:26 ETA(2-4/4): kernel-lt-m 21% [====                ] 4.0 MB/s |  23 MB     00:20 ETA(2-4/4): kernel-lt-m 25% [=====               ] 4.7 MB/s |  28 MB     00:16 ETA(2-4/4): kernel-lt-m 30% [======              ] 5.4 MB/s |  33 MB     00:13 ETA(2-4/4): kernel-lt-m 35% [=======             ] 6.2 MB/s |  38 MB     00:11 ETA(2-4/4): kernel-lt-c 41% [========            ] 7.1 MB/s |  44 MB     00:08 ETA(2/4): kernel-lt-devel-6.1.187-1.el9.elrepo.x86 3.6 MB/s |  15 MB     00:04    
+(3-4/4): kernel-lt-m 43% [========-           ] 7.2 MB/s |  46 MB     00:08 ETA(3-4/4): kernel-lt-m 48% [=========-          ] 7.8 MB/s |  51 MB     00:07 ETA(3-4/4): kernel-lt-m 53% [==========-         ] 8.4 MB/s |  57 MB     00:05 ETA(3-4/4): kernel-lt-c 58% [===========-        ] 9.1 MB/s |  63 MB     00:04 ETA(3-4/4): kernel-lt-c 64% [============-       ] 9.9 MB/s |  69 MB     00:03 ETA(3-4/4): kernel-lt-c 71% [==============      ]  11 MB/s |  76 MB     00:02 ETA(3-4/4): kernel-lt-m 79% [===============-    ]  12 MB/s |  84 MB     00:01 ETA(3-4/4): kernel-lt-m 87% [=================   ]  13 MB/s |  93 MB     00:01 ETA(3-4/4): kernel-lt-m 96% [=================== ]  14 MB/s | 103 MB     00:00 ETA(3/4): kernel-lt-core-6.1.187-1.el9.elrepo.x86_ 6.8 MB/s |  46 MB     00:06    
+(4/4): kernel-lt-mod 97% [===================-]  14 MB/s | 104 MB     00:00 ETA(4/4): kernel-lt-modules-6.1.187-1.el9.elrepo.x 6.9 MB/s |  45 MB     00:06    
+--------------------------------------------------------------------------------
+Total                                            15 MB/s | 107 MB     00:07     
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :  [============                                       ] 1/1  Preparing        :  [=========================                          ] 1/1  Preparing        :  [======================================             ] 1/1  Preparing        :                                                        1/1 
+  Installing       : kernel-lt-core-6.1.187-1. [                          ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [=                         ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [==                        ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [===                       ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [====                      ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [=====                     ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [======                    ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [=======                   ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [========                  ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [=========                 ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [==========                ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [===========               ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [============              ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [=============             ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [==============            ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [===============           ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [================          ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [=================         ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [==================        ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [===================       ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [====================      ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [=====================     ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [======================    ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [=======================   ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [========================  ] 1/4  Installing       : kernel-lt-core-6.1.187-1. [========================= ] 1/4  Installing       : kernel-lt-core-6.1.187-1.el9.elrepo.x86_64             1/4 
+  Running scriptlet: kernel-lt-core-6.1.187-1.el9.elrepo.x86_64             1/4 
+  Installing       : kernel-lt-modules-6.1.187 [                          ] 2/4  Installing       : kernel-lt-modules-6.1.187 [=                         ] 2/4  Installing       : kernel-lt-modules-6.1.187 [==                        ] 2/4  Installing       : kernel-lt-modules-6.1.187 [===                       ] 2/4  Installing       : kernel-lt-modules-6.1.187 [====                      ] 2/4  Installing       : kernel-lt-modules-6.1.187 [=====                     ] 2/4  Installing       : kernel-lt-modules-6.1.187 [======                    ] 2/4  Installing       : kernel-lt-modules-6.1.187 [=======                   ] 2/4  Installing       : kernel-lt-modules-6.1.187 [========                  ] 2/4  Installing       : kernel-lt-modules-6.1.187 [=========                 ] 2/4  Installing       : kernel-lt-modules-6.1.187 [==========                ] 2/4  Installing       : kernel-lt-modules-6.1.187 [===========               ] 2/4  Installing       : kernel-lt-modules-6.1.187 [============              ] 2/4  Installing       : kernel-lt-modules-6.1.187 [=============             ] 2/4  Installing       : kernel-lt-modules-6.1.187 [==============            ] 2/4  Installing       : kernel-lt-modules-6.1.187 [===============           ] 2/4  Installing       : kernel-lt-modules-6.1.187 [================          ] 2/4  Installing       : kernel-lt-modules-6.1.187 [=================         ] 2/4  Installing       : kernel-lt-modules-6.1.187 [==================        ] 2/4  Installing       : kernel-lt-modules-6.1.187 [===================       ] 2/4  Installing       : kernel-lt-modules-6.1.187 [====================      ] 2/4  Installing       : kernel-lt-modules-6.1.187 [=====================     ] 2/4  Installing       : kernel-lt-modules-6.1.187 [======================    ] 2/4  Installing       : kernel-lt-modules-6.1.187 [=======================   ] 2/4  Installing       : kernel-lt-modules-6.1.187 [========================  ] 2/4  Installing       : kernel-lt-modules-6.1.187 [========================= ] 2/4  Installing       : kernel-lt-modules-6.1.187-1.el9.elrepo.x86_64          2/4 
+  Running scriptlet: kernel-lt-modules-6.1.187-1.el9.elrepo.x86_64          2/4 
+  Installing       : kernel-lt-6.1.187-1.el9.e [                          ] 3/4  Installing       : kernel-lt-6.1.187-1.el9.elrepo.x86_64                  3/4 
+  Installing       : kernel-lt-devel-6.1.187-1 [                          ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [=                         ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [==                        ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [===                       ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [====                      ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [=====                     ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [======                    ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [=======                   ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [========                  ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [=========                 ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [==========                ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [===========               ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [============              ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [=============             ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [==============            ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [===============           ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [================          ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [=================         ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [==================        ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [===================       ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [====================      ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [=====================     ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [======================    ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [=======================   ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [========================  ] 4/4  Installing       : kernel-lt-devel-6.1.187-1 [========================= ] 4/4  Installing       : kernel-lt-devel-6.1.187-1.el9.elrepo.x86_64            4/4 
+  Running scriptlet: kernel-lt-devel-6.1.187-1.el9.elrepo.x86_64            4/4 
+  Running scriptlet: kernel-lt-core-6.1.187-1.el9.elrepo.x86_64             4/4 
+  Running scriptlet: kernel-lt-devel-6.1.187-1.el9.elrepo.x86_64            4/4 
+  Verifying        : kernel-lt-6.1.187-1.el9.elrepo.x86_64                  1/4 
+  Verifying        : kernel-lt-core-6.1.187-1.el9.elrepo.x86_64             2/4 
+  Verifying        : kernel-lt-devel-6.1.187-1.el9.elrepo.x86_64            3/4 
+  Verifying        : kernel-lt-modules-6.1.187-1.el9.elrepo.x86_64          4/4 
+Installed products updated.
+
+Installed:
+  kernel-lt-6.1.187-1.el9.elrepo.x86_64                                         
+  kernel-lt-core-6.1.187-1.el9.elrepo.x86_64                                    
+  kernel-lt-devel-6.1.187-1.el9.elrepo.x86_64                                   
+  kernel-lt-modules-6.1.187-1.el9.elrepo.x86_64                                 
+
+Complete!
+Use grubby to select the default kernel for GRUB to boot:
+index=0
+kernel="/boot/vmlinuz-7.2.3-1.el9.elrepo.x86_64"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet $tuned_params"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-7.2.3-1.el9.elrepo.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (7.2.3-1.el9.elrepo.x86_64) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-7.2.3-1.el9.elrepo.x86_64"
+index=1
+kernel="/boot/vmlinuz-6.1.187-1.el9.elrepo.x86_64"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet $tuned_params"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-6.1.187-1.el9.elrepo.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (6.1.187-1.el9.elrepo.x86_64) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-6.1.187-1.el9.elrepo.x86_64"
+index=2
+kernel="/boot/vmlinuz-5.14.0-687.42.1.el9_8.x86_64"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet $tuned_params"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-5.14.0-687.42.1.el9_8.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (5.14.0-687.42.1.el9_8.x86_64) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-5.14.0-687.42.1.el9_8.x86_64"
+index=3
+kernel="/boot/vmlinuz-5.14.0-687.5.3.el9_8.x86_64"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet $tuned_params"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-5.14.0-687.5.3.el9_8.x86_64.img $tuned_initrd"
+title="Red Hat Enterprise Linux (5.14.0-687.5.3.el9_8.x86_64) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-5.14.0-687.5.3.el9_8.x86_64"
+index=4
+kernel="/boot/vmlinuz-0-rescue-54d9f898e283428a85893d861d0afb07"
+args="ro crashkernel=1G-2G:192M,2G-64G:256M,64G-:512M resume=/dev/mapper/rhel_ub26d--070x-swap rd.luks.uuid=luks-1014985a-d682-4d0f-aca8-bc123d947e1f rd.lvm.lv=rhel_ub26d-070x/root rd.lvm.lv=rhel_ub26d-070x/swap rhgb quiet"
+root="/dev/mapper/rhel_ub26d--070x-root"
+initrd="/boot/initramfs-0-rescue-54d9f898e283428a85893d861d0afb07.img"
+title="Red Hat Enterprise Linux (0-rescue-54d9f898e283428a85893d861d0afb07) 9.8 (Plow)"
+id="54d9f898e283428a85893d861d0afb07-0-rescue"
+'grubby --default-index' returns 1
+as the current default boot index.
+Run 'sudo grubby --set-default-index=#' where # is the new default boot index.
+
+You must disable Secure Boot to run elrepo kernels as they are unsigned.
+Reboot to the new 6.1.187-1.el9.elrepo.x86_64 kernel (y/n)? n
+]0;rcpao@rh98-038x:~/Documents/job/sgh/git-repo/cxl-raw-enabler[?2004h[rcpao@rh98-038x cxl-raw-enabler]$ exit
+[?2004lexit
+
+Script done on 2026-09-03 08:25:23-07:00 [COMMAND_EXIT_CODE="0"]
