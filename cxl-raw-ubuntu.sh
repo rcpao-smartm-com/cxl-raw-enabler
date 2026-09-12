@@ -59,27 +59,41 @@ sudo apt-get -y install rustc
 
 # Ubuntu 22.04.4: /boot/config-6.5.0-21-generic; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0"
 # Ubuntu 24.04 daily; /boot/config-6.8.0-11-generic; Linux/x86 6.8.0-rc4 Kernel Configuration; CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-13ubuntu1) 13.2.0"
-GCCVERSTR=$(grep -Eo 'gcc-[0-9]+' /boot/config-$UNAME_R) # gcc-12
-GCCVERNUM=${GCCVERSTR#gcc-} # 12
-sudo apt-get -y install $GCCVERSTR
-$GCCVERSTR --version
-# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
-# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
-# sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/$GCCVERSTR $GCCVERNUM
-yes "" | sudo update-alternatives --config gcc
+# Ubuntu 26.04: CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0"
+GCCVERSTR=$(grep -Eo 'gcc-[0-9]+' /boot/config-$UNAME_R | head -n 1) # gcc-12
+if [ -z "$GCCVERSTR" ]; then
+  # Unversioned gcc: take major version from the trailing X.Y.Z in CONFIG_CC_VERSION_TEXT
+  GCCVERNUM=$(grep '^CONFIG_CC_VERSION_TEXT=' /boot/config-$UNAME_R | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | tail -n 1)
+  GCCVERNUM=${GCCVERNUM%%.*} # 15
+  [ -n "$GCCVERNUM" ] && GCCVERSTR=gcc-$GCCVERNUM
+else
+  GCCVERNUM=${GCCVERSTR#gcc-} # 12
+fi
+if [ -n "$GCCVERSTR" ]; then
+  sudo apt-get -y install $GCCVERSTR
+  $GCCVERSTR --version
+  # sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
+  # sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12
+  # sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
+  if [ -x /usr/bin/$GCCVERSTR ]; then
+    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/$GCCVERSTR $GCCVERNUM
+    yes "" | sudo update-alternatives --config gcc
+  fi
+fi
 gcc --version
 # 22.04.4: gcc (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
 # 24.04 daily: gcc (Ubuntu 12.3.0-15ubuntu1) 12.3.0
 # 24.04 daily: gcc-13 (Ubuntu 13.2.0-21ubuntu1) 13.2.0
+# 26.04: gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0
 
 
 apt-cache search linux-source | tee apt-cache_search_linux-source.txt
-grep ${KVERS} apt-cache_search_linux-source.txt
+# linux-source packages are named linux-source-7.0.0, not linux-source-7.0.0-31
+grep linux-source-${UNAME_R_3} apt-cache_search_linux-source.txt
 if [ $? -gt 0 ]; then
   echo ""
   echo "--------------------------------------------------"
-  echo "error: linux-source for ${KVERS} does not exist!"
+  echo "error: linux-source for ${UNAME_R_3} does not exist!"
   echo "--------------------------------------------------"
   echo ""
 fi
@@ -114,16 +128,14 @@ if [ ${RETVAL} -eq 0 ]; then
   # [ -f linux-hwe-6.5_6.5.0.orig.tar.gz ] && tar -xvf linux-hwe-6.5_6.5.0.orig.tar.gz && mv linux-6.5 linux-hwe-6.5-6.5.0
   [ -f linux-hwe-${UNAME_R_2}_${UNAME_R_3}.orig.tar.gz ] && tar -xvf linux-hwe-${UNAME_R_2}_${UNAME_R_3}.orig.tar.gz && mv linux-${UNAME_R_2} linux-hwe-6.5-${UNAME_R_3}
   # ToDo patch linux-hwe-6.5_6.5.0-27.28~22.04.1.diff.gz or $(uname -r) equivalent, except Ubuntu probably wouldn't patch the cxl driver sources.
-  cd linux-hwe-${UNAME_R_2}-${UNAME_R_3} # "linux-hwe-6.5-6.5.0"
-  RETVAL=$? # 0=cd success, contrary to 'man bash cd' true=success
-  # cd xxx # fail test
-  # RETVAL=$? # 1 if cd fails
-  # [ "$(basename $PWD)"!="linux-hwe-${UNAME_R_2}-${UNAME_R_3}" ] && cd linux-${UNAME_R_3} # "linux-6.8.0"
-  if [ ${RETVAL} -ne 0 ]; then
+  RETVAL=1
+  if [ -d linux-hwe-${UNAME_R_2}-${UNAME_R_3} ]; then
+    cd linux-hwe-${UNAME_R_2}-${UNAME_R_3} # "linux-hwe-6.5-6.5.0"
+    RETVAL=$? # 0=cd success, contrary to 'man bash cd' true=success
+  elif [ -d linux-oem-${UNAME_R_2}-${UNAME_R_3} ]; then
     cd linux-oem-${UNAME_R_2}-${UNAME_R_3} # "linux-oem-6.5-6.5.0"
     RETVAL=$?
-  fi
-  if [ ${RETVAL} -ne 0 ]; then
+  elif [ -d linux-${UNAME_R_3} ]; then
     cd linux-${UNAME_R_3} # "linux-6.8.0"
     RETVAL=$?
   fi
@@ -349,6 +361,10 @@ cat <<EOF > $SCRIPTSPEC
 [ -L $DSTDIR2/cxl ] && sudo rm $DSTDIR2/cxl 
 [ -d $DSTDIR2/cxl ] && [ ! -d $DSTDIR2/cxl-original ] && sudo mv $DSTDIR2/cxl $DSTDIR2/cxl-original
 [ -d $DSTDIR2/cxl-raw-$UNAME_R ] && sudo ln -s $DSTDIR2/cxl-raw-$UNAME_R $DSTDIR2/cxl
+# Ubuntu 26.04+ dracut walks kernel/drivers and treats helper cxl-*.sh as modules.
+_cxl_hide=\$(mktemp -d)
+trap 'sudo find "\$_cxl_hide" -maxdepth 1 -type f -name "cxl-*.sh" -exec mv {} $DSTDIR2/ \\; ; rmdir "\$_cxl_hide" 2>/dev/null' EXIT
+sudo find $DSTDIR2 -maxdepth 1 -type f -name 'cxl-*.sh' -exec mv {} "\$_cxl_hide"/ \\;
 sudo update-initramfs -c -k ${UNAME_R} # update /boot/initrd.img-${UNAME_R} in case cxl drivers are loaded at Linux kernel boot
 EOF
 chmod +x $SCRIPTSPEC
@@ -360,6 +376,10 @@ cat <<EOF > $SCRIPTSPEC
 #!/bin/bash -x
 [ -L $DSTDIR2/cxl ] && sudo rm $DSTDIR2/cxl 
 [ ! -d $DSTDIR2/cxl ] && [ -d $DSTDIR2/cxl-original ] && sudo ln -s $DSTDIR2/cxl-original $DSTDIR2/cxl
+# Ubuntu 26.04+ dracut walks kernel/drivers and treats helper cxl-*.sh as modules.
+_cxl_hide=\$(mktemp -d)
+trap 'sudo find "\$_cxl_hide" -maxdepth 1 -type f -name "cxl-*.sh" -exec mv {} $DSTDIR2/ \\; ; rmdir "\$_cxl_hide" 2>/dev/null' EXIT
+sudo find $DSTDIR2 -maxdepth 1 -type f -name 'cxl-*.sh' -exec mv {} "\$_cxl_hide"/ \\;
 sudo update-initramfs -c -k ${UNAME_R} # update /boot/initrd.img-${UNAME_R} in case cxl drivers are loaded at Linux kernel boot
 EOF
 chmod +x $SCRIPTSPEC
