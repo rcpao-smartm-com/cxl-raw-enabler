@@ -15,6 +15,17 @@ and related NVDIMM/DAX/PMEM options, and creates bash scripts in
 - cxl-insmod.sh - install the cxl modules
 - cxl-rmmod.sh - remove the cxl modules
 
+With `CONFIG_CXL_MEM_RAW_COMMANDS=y`, most RAW opcodes are allowed when
+`/sys/kernel/debug/cxl/mbox/raw_allow_all` is `N`. Kernel blocks with `N`
+only:
+
+| Kind | Opcodes |
+|------|---------|
+| Denylist | `0x0202`, `0x4101`, `0x4103`, `0x4204`, `0x4300`–`0x4302`, `0x4304`–`0x4305` |
+| Security sets | `0x44xx`, `0x45xx`, `0x46xx` |
+
+`echo Y | sudo tee /sys/kernel/debug/cxl/mbox/raw_allow_all` unlocks those.
+
 Ubuntu 22.04.4 LTS desktop installer installs kernel 6.5.0-18.  
 2024-08-07: 22.04.4 kernel = 6.5.0-45, 24.04 kernel = 6.8.0-39  
 2024-08-28: 22.04.4 and 24.04 kernel = 6.8.0-40  
