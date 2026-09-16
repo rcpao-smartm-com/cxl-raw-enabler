@@ -100,67 +100,155 @@ fi
 
 # ERROR:
 # https://askubuntu.com/a/938955
-# 'apt-get source ...' only gets the _latest_ source:
-# + uname -r
-# 6.7.6-060706-generic
-# + apt-get source linux-image-unsigned-6.7.6-060706-generic
-# Reading package lists... Done
-# Picking 'linux' as source package instead of 'linux-image-unsigned-6.7.6-060706-generic'
-# Need to get 232 MB of source archives.
-# Get:1 http://us.archive.ubuntu.com/ubuntu noble-updates/main linux 6.8.0-35.35 (dsc) [9,267 B]
-# Get:2 http://us.archive.ubuntu.com/ubuntu noble-updates/main linux 6.8.0-35.35 (tar) [230 MB]
-# Get:3 http://us.archive.ubuntu.com/ubuntu noble-updates/main linux 6.8.0-35.35 (diff) [1,617 kB]
-# Fetched 232 MB in 44s (5,314 kB/s)
-# dpkg-source: info: extracting linux in linux-6.8.0
-# dpkg-source: info: unpacking linux_6.8.0.orig.tar.gz
-# dpkg-source: info: applying linux_6.8.0-35.35.diff.gz
-# dpkg-source: info: upstream files that have been modified:
+# 'apt-get source linux-image-unsigned-$(uname -r)' often picks source package
+# 'linux' at the *latest* archive version (e.g. 7.0.0-31.31), not the running
+# ABI (e.g. 7.0.0-22 / package 7.0.0-22.22). Prefer an exact version; if apt
+# cannot supply it, wget Launchpad + dpkg-source -x before git clone.
+KERNEL_SRC_PARENT=$(pwd)
+# Package version that built this image: 7.0.0-22.22 (not 7.0.0-22-generic)
+SRCVER=$(dpkg-query -W -f='${Version}' "linux-image-${UNAME_R}" 2>/dev/null || true)
+[ -z "${SRCVER}" ] && SRCVER=$(dpkg-query -W -f='${Version}' "linux-image-unsigned-${UNAME_R}" 2>/dev/null || true)
+SRCVER=${SRCVER#*:} # drop epoch if present
+SRC_PKG=$(dpkg-query -W -f='${Source}' "linux-image-unsigned-${UNAME_R}" 2>/dev/null | awk '{print $1}' || true)
+[ -z "${SRC_PKG}" ] && SRC_PKG=$(dpkg-query -W -f='${Source}' "linux-image-${UNAME_R}" 2>/dev/null | awk '{print $1}' || true)
+# Signed image packages report Source=linux-signed; tree/drivers live in 'linux'
+# (or linux-hwe-*). Map *-signed back to the unsigned source package name.
+case "${SRC_PKG}" in
+  linux-signed) SRC_PKG=linux ;;
+  linux-signed-*) SRC_PKG=linux-${SRC_PKG#linux-signed-} ;;
+  "") SRC_PKG=linux ;;
+esac
+echo "Running kernel ${UNAME_R}; want source ${SRC_PKG}=${SRCVER}"
+
+cxl_cd_kernel_src() {
+  # Prefer tree whose debian changelog matches SRCVER when known.
+  local d chg
+  RETVAL=1
+  for d in \
+    "linux-hwe-${UNAME_R_2}-${UNAME_R_3}" \
+    "linux-oem-${UNAME_R_2}-${UNAME_R_3}" \
+    "linux-${UNAME_R_3}" \
+    "${SRC_PKG}-${UNAME_R_3}"
+  do
+    [ -d "${KERNEL_SRC_PARENT}/${d}" ] || continue
+    chg=$(head -n 1 "${KERNEL_SRC_PARENT}/${d}/debian/changelog" 2>/dev/null \
+      || head -n 1 "${KERNEL_SRC_PARENT}/${d}/debian.master/changelog" 2>/dev/null \
+      || true)
+    if [ -n "${SRCVER}" ] && ! echo "${chg}" | grep -Fq "(${SRCVER})"; then
+      echo "Skip ${d}: changelog '${chg}' does not match ${SRCVER}"
+      continue
+    fi
+    cd "${KERNEL_SRC_PARENT}/${d}"
+    RETVAL=$?
+    return
+  done
+}
+
 uname -r
-apt-get source linux-image-unsigned-${UNAME_R} # 6.11.0-25-generic
+# Exact source version when known (still fails if superseded / not in Sources)
+if [ -n "${SRCVER}" ]; then
+  apt-get source "${SRC_PKG}=${SRCVER}" \
+    || apt-get source "linux-image-unsigned-${UNAME_R}" \
+    || apt-get source "linux-image-${UNAME_R}" \
+    || true
+else
+  apt-get source "linux-image-unsigned-${UNAME_R}" \
+    || apt-get source "linux-image-${UNAME_R}" \
+    || true
+fi
 # apt-get source linux-source-${UNAME_R_3}
-RETVAL=0 # Assume apt-get source works and try to cd into the extracted directory # $? # DBG: non-zero will use git clone
 # https://ubuntuforums.org/showthread.php?t=1758823&p=10822030#post10822030
 # If you really want the older kernel info, you can get it from the
 # Ubuntu Git repository. The tags will allow to you select the exact
 # version you want.
 #RETVAL=-1 # force using git instead of 'apt source'
-if [ ${RETVAL} -eq 0 ]; then
-  # [ -f linux-hwe-6.5_6.5.0.orig.tar.gz ] && tar -xvf linux-hwe-6.5_6.5.0.orig.tar.gz && mv linux-6.5 linux-hwe-6.5-6.5.0
-  [ -f linux-hwe-${UNAME_R_2}_${UNAME_R_3}.orig.tar.gz ] && tar -xvf linux-hwe-${UNAME_R_2}_${UNAME_R_3}.orig.tar.gz && mv linux-${UNAME_R_2} linux-hwe-6.5-${UNAME_R_3}
-  # ToDo patch linux-hwe-6.5_6.5.0-27.28~22.04.1.diff.gz or $(uname -r) equivalent, except Ubuntu probably wouldn't patch the cxl driver sources.
-  RETVAL=1
-  if [ -d linux-hwe-${UNAME_R_2}-${UNAME_R_3} ]; then
-    cd linux-hwe-${UNAME_R_2}-${UNAME_R_3} # "linux-hwe-6.5-6.5.0"
-    RETVAL=$? # 0=cd success, contrary to 'man bash cd' true=success
-  elif [ -d linux-oem-${UNAME_R_2}-${UNAME_R_3} ]; then
-    cd linux-oem-${UNAME_R_2}-${UNAME_R_3} # "linux-oem-6.5-6.5.0"
-    RETVAL=$?
-  elif [ -d linux-${UNAME_R_3} ]; then
-    cd linux-${UNAME_R_3} # "linux-6.8.0"
-    RETVAL=$?
-  fi
-  if [ ${RETVAL} -ne 0 ]; then
-    echo "Error: Failed to cd into kernel source directory."
-    echo "Fall through and attempt to use 'git clone . . .'"
-    # exit 1
-  fi
-  # LS_D_LINUX=$(ls -d linux-*/) 
-  # cd ${LS_D_LINUX}
-    # + cd linux-hwe-6.5-6.5.0/ linux-hwe-6.5-6.5.0-26/
-    # ./cxl-raw-ubuntu.sh: line 68: cd: too many arguments
-    # Manually created folders will confuse 'cd linux-*/'
-
-fi # else
+cd "${KERNEL_SRC_PARENT}"
+# [ -f linux-hwe-6.5_6.5.0.orig.tar.gz ] && tar -xvf linux-hwe-6.5_6.5.0.orig.tar.gz && mv linux-6.5 linux-hwe-6.5-6.5.0
+[ -f linux-hwe-${UNAME_R_2}_${UNAME_R_3}.orig.tar.gz ] && tar -xvf linux-hwe-${UNAME_R_2}_${UNAME_R_3}.orig.tar.gz && mv linux-${UNAME_R_2} linux-hwe-6.5-${UNAME_R_3}
+# ToDo patch linux-hwe-6.5_6.5.0-27.28~22.04.1.diff.gz or $(uname -r) equivalent, except Ubuntu probably wouldn't patch the cxl driver sources.
+cxl_cd_kernel_src
+if [ ${RETVAL} -ne 0 ]; then
+  echo "Error: apt did not provide kernel source matching ${UNAME_R} (${SRC_PKG}=${SRCVER})."
+  echo "Trying Launchpad wget + dpkg-source -x ..."
+fi
 
 
 # exit 1 # DBG
+
+
+# Launchpad still hosts superseded .dsc/.diff when apt Sources no longer list them.
+if [ ${RETVAL} -ne 0 ] && [ -n "${SRCVER}" ]; then
+  cd "${KERNEL_SRC_PARENT}"
+  if [ ! $(command -v wget) ]; then
+    sudo apt-get -y install wget
+  fi
+  # /ubuntu/+source/.../+files/<file> often 404s; +archive/primary/+files works
+  # and 303s to launchpadlibrarian.net.
+  LP_FILES="https://launchpad.net/ubuntu/+archive/primary/+files"
+  for f in \
+    "${SRC_PKG}_${SRCVER}.dsc" \
+    "${SRC_PKG}_${SRCVER}.diff.gz" \
+    "${SRC_PKG}_${UNAME_R_3}.orig.tar.gz"
+  do
+    # Do not reuse empty/404 leftovers (wget -O can leave a 0-byte file).
+    if [ -f "${f}" ] && [ -s "${f}" ]; then
+      if [[ "${f}" == *.dsc ]] && ! grep -q '^Source:' "${f}"; then
+        echo "Removing invalid ${f} (no Source: field)"
+        rm -f "${f}"
+      else
+        echo "Reusing existing ${f}"
+        continue
+      fi
+    elif [ -f "${f}" ]; then
+      echo "Removing empty ${f}"
+      rm -f "${f}"
+    fi
+    wget -O "${f}" "${LP_FILES}/${f}" || {
+      echo "Error: wget ${LP_FILES}/${f} failed."
+      rm -f "${f}"
+      f=""
+      break
+    }
+    if [ ! -s "${f}" ]; then
+      echo "Error: wget left empty ${f}"
+      rm -f "${f}"
+      f=""
+      break
+    fi
+    if [[ "${f}" == *.dsc ]] && ! grep -q '^Source:' "${f}"; then
+      echo "Error: downloaded ${f} is not a valid .dsc"
+      rm -f "${f}"
+      f=""
+      break
+    fi
+  done
+  if [ -n "${f}" ] && [ -s "${SRC_PKG}_${SRCVER}.dsc" ] && grep -q '^Source:' "${SRC_PKG}_${SRCVER}.dsc"; then
+    # dpkg-source refuses to extract over an existing tree (often wrong ABI)
+    for d in \
+      "linux-hwe-${UNAME_R_2}-${UNAME_R_3}" \
+      "linux-oem-${UNAME_R_2}-${UNAME_R_3}" \
+      "linux-${UNAME_R_3}" \
+      "${SRC_PKG}-${UNAME_R_3}"
+    do
+      if [ -d "${d}" ]; then
+        mv "${d}" "${d}.not-${SRCVER}-$(date +%Y%m%d-%H%M%S)"
+      fi
+    done
+    dpkg-source -x "${SRC_PKG}_${SRCVER}.dsc"
+    cxl_cd_kernel_src
+  fi
+  if [ ${RETVAL} -ne 0 ]; then
+    echo "Error: Launchpad wget/dpkg-source did not yield ${SRC_PKG}=${SRCVER}."
+    echo "Fall through and attempt to use 'git clone . . .'"
+  fi
+fi
 
 
 if [ ${RETVAL} -ne 0 ]; then
 
   # https://stackoverflow.com/a/226724
   while true; do
-    read -p "apt source failed.  Do you wish to git clone? " yn
+    read -p "apt/Launchpad source failed.  Do you wish to git clone? " yn
     case $yn in
       [Yy]* ) break;;
       [Nn]* ) exit 2;;
@@ -169,6 +257,7 @@ if [ ${RETVAL} -ne 0 ]; then
   done
 
   # Attempt 'git clone . . .'
+  cd "${KERNEL_SRC_PARENT}"
   if [ ! $(command -v git) ]; then
     sudo apt-get -y install git
   fi
@@ -195,6 +284,10 @@ if [ ${RETVAL} -ne 0 ]; then
   # GITTAG=$(git tag -l "Ubuntu-${KVERS}.*")
     git tag -l "Ubuntu-hwe-*-${KVERS}*" # KVERS=${UNAME_R%-generic} # remove "-generic"
     GITTAG=$(git tag -l "Ubuntu-hwe-*-${KVERS}.*" | tail -n 1)
+  if [ -z "${GITTAG}" ]; then
+    git tag -l "Ubuntu-${KVERS}*"
+    GITTAG=$(git tag -l "Ubuntu-${KVERS}.*" | tail -n 1)
+  fi
   if [ -z "${GITTAG}" ]; then
     # echo "Error: git tag -l \"\${UNAME_R_2}*\" failed."
     # echo "Error: git tag -l \"\${UNAME_R_3}*\" failed."
