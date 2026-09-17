@@ -223,7 +223,8 @@ if [ ${RETVAL} -ne 0 ] && [ -n "${SRCVER}" ]; then
     fi
   done
   if [ -n "${f}" ] && [ -s "${SRC_PKG}_${SRCVER}.dsc" ] && grep -q '^Source:' "${SRC_PKG}_${SRCVER}.dsc"; then
-    # dpkg-source refuses to extract over an existing tree (often wrong ABI)
+    # dpkg-source refuses to extract over an existing tree (often wrong ABI).
+    # Mismatched trees are never reused; remove them instead of renaming.
     for d in \
       "linux-hwe-${UNAME_R_2}-${UNAME_R_3}" \
       "linux-oem-${UNAME_R_2}-${UNAME_R_3}" \
@@ -231,7 +232,8 @@ if [ ${RETVAL} -ne 0 ] && [ -n "${SRCVER}" ]; then
       "${SRC_PKG}-${UNAME_R_3}"
     do
       if [ -d "${d}" ]; then
-        mv "${d}" "${d}.not-${SRCVER}-$(date +%Y%m%d-%H%M%S)"
+        echo "Removing existing ${d} before dpkg-source -x ${SRC_PKG}_${SRCVER}.dsc"
+        rm -rf "${d}"
       fi
     done
     dpkg-source -x "${SRC_PKG}_${SRCVER}.dsc"
