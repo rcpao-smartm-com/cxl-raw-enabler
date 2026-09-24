@@ -327,16 +327,17 @@ make olddefconfig # https://serverfault.com/a/538150/221343
 # Enable CONFIG_CXL_REGION_INVALIDATION_TEST=y
 # NVDIMM / DAX / PMEM and related options
 ./scripts/config --file .config --enable CONFIG_CXL_MEM_RAW_COMMANDS
-./scripts/config --file .config --enable CONFIG_CXL_REGION_INVALIDATION_TEST
-./scripts/config --file .config --enable CONFIG_ACPI_NFIT
-./scripts/config --file .config --enable CONFIG_TRANSPARENT_HUGEPAGE
-./scripts/config --file .config --enable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
-./scripts/config --file .config --disable CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
-./scripts/config --file .config --enable CONFIG_DEV_DAX
-./scripts/config --file .config --enable CONFIG_ND_BTT
-./scripts/config --file .config --enable CONFIG_NVDIMM_SECURITY_TEST
-./scripts/config --file .config --enable CONFIG_BLK_DEV_PMEM
-./scripts/config --file .config --enable CONFIG_IO_STRICT_DEVMEM
+# ./scripts/config --file .config --enable CONFIG_CXL_REGION_INVALIDATION_TEST
+# ./scripts/config --file .config --enable CONFIG_ACPI_NFIT
+# ./scripts/config --file .config --enable CONFIG_TRANSPARENT_HUGEPAGE
+# ./scripts/config --file .config --enable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
+# ./scripts/config --file .config --disable CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
+# ./scripts/config --file .config --enable CONFIG_DEV_DAX
+# ./scripts/config --file .config --enable CONFIG_ND_BTT
+# ./scripts/config --file .config --enable CONFIG_NVDIMM_SECURITY_TEST
+# ./scripts/config --file .config --enable CONFIG_BLK_DEV_PMEM
+./scripts/config --file .config --disable CONFIG_STRICT_DEVMEM # disable for CXL error injection tests
+# ./scripts/config --file .config --enable CONFIG_IO_STRICT_DEVMEM
 make olddefconfig
 #
 diff /boot/config-${UNAME_R} .config
