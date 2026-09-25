@@ -25,6 +25,7 @@ UNAME_R=$(uname -r)
 
 # Prerequisites
 sudo apt-get -y --fix-broken install
+# sudo apt-get -y install build-essential
 sudo apt-get -y install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
 sudo apt-get -y install zstd
 sudo apt-get -y install rustc

@@ -21,6 +21,8 @@ source /etc/os-release
 [[ "$NAME" != "Ubuntu" ]] && echo "error $0:$LINENO: only Ubuntu is supported by this script." && exit $LINENO
 [[ "$VERSION_ID" != "24.04" ]] && echo "error $0:$LINENO: only Ubuntu 24.04 is supported by this script." && exit $LINENO
 
+UNAME_R=$(uname -r)
+
 # Prerequisites
 sudo apt-get -y --fix-broken install
 # sudo apt-get -y install build-essential
@@ -66,13 +68,13 @@ python3 "${SCRIPT_DIR}/patches/v6.17/apply-secondary-mbox.py" "$(pwd)"
 
 sudo cp -r drivers/cxl/* /lib/modules/$(uname -r)/build/drivers/cxl/
 if [ -f include/uapi/linux/cxl_mem.h ]; then
-  sudo cp include/uapi/linux/cxl_mem.h /lib/modules/$(uname -r)/build/include/uapi/linux/cxl_mem.h
+  sudo cp include/uapi/linux/cxl_mem.h /lib/modules/${UNAME_R}/build/include/uapi/linux/cxl_mem.h
 fi
 
-cd /lib/modules/$(uname -r)/build/drivers/cxl
+cd /lib/modules/${UNAME_R}/build/drivers/cxl
 ls -la
 
-cd /lib/modules/$(uname -r)/build
+cd /lib/modules/${UNAME_R}/build
 grep CONFIG_CXL_MEM_RAW_COMMANDS .config
 
 sudo scripts/config --file .config --set-val CONFIG_CXL_MEM_RAW_COMMANDS y
@@ -103,39 +105,47 @@ grep CONFIG_ACPI_NFIT include/generated/autoconf.h
 grep CONFIG_DEV_DAX include/generated/autoconf.h
 grep CONFIG_BLK_DEV_PMEM include/generated/autoconf.h
 
-cd /lib/modules/$(uname -r)/build
+cd /lib/modules/${UNAME_R}/build
+sudo make M=drivers/cxl clean
 sudo make M=drivers/cxl modules
 find drivers/cxl -name "*.ko"
 
-sudo mkdir -p /lib/modules/$(uname -r)/updates/drivers/cxl/core
-sudo mkdir -p /lib/modules/$(uname -r)/updates/drivers/cxl/
+sudo mkdir -p /lib/modules/${UNAME_R}/updates/drivers/cxl/core
+sudo mkdir -p /lib/modules/${UNAME_R}/updates/drivers/cxl/
 
-cd /lib/modules/$(uname -r)/build
+cd /lib/modules/${UNAME_R}/build
 
-sudo cp drivers/cxl/core/cxl_core.ko /lib/modules/$(uname -r)/updates/drivers/cxl/core/
-sudo cp drivers/cxl/cxl_*.ko /lib/modules/$(uname -r)/updates/drivers/cxl/
+sudo cp drivers/cxl/core/cxl_core.ko /lib/modules/${UNAME_R}/updates/drivers/cxl/core/
+sudo cp drivers/cxl/cxl_*.ko /lib/modules/${UNAME_R}/updates/drivers/cxl/
 # Update module dependencies
 sudo depmod -a
 
-sudo lsmod | grep cxl | awk '{print $1}' | xargs -r -n1 sudo modprobe -r
+# Unload in reverse dependency order. In-use modules (live CXL device) are not
+# fatal — new .ko files are already in updates/; reboot will load them.
+for _m in cxl_mem cxl_pci cxl_acpi cxl_pmem cxl_port cxl_core; do
+	sudo modprobe -r "${_m}" || true
+done
+unset _m
 
-sudo modprobe cxl_acpi && sudo modprobe cxl_pci && sudo modprobe cxl_mem
+if ! sudo modprobe cxl_acpi || ! sudo modprobe cxl_pci || ! sudo modprobe cxl_mem; then
+	echo "warning $0:$LINENO: could not reload CXL modules (likely in use); reboot to load updates/" >&2
+fi
 
 sudo update-initramfs -u
 
-lsmod | grep cxl
+lsmod | grep cxl || true
 
-ls -la /dev/cxl/
+ls -la /dev/cxl/ || true
 
 hexdump -C /lib/modules/$(uname -r)/updates/cxl_core.ko | grep -A 3 -B 3 "02 00 00 00.*ff ff ff ff.*ff ff ff ff"
 
 # Verify debugfs is mounted
-mount | grep debugfs
+mount | grep debugfs || true
 # Check for CXL RAW commands control
-sudo ls -la /sys/kernel/debug/cxl/mbox/
+sudo ls -la /sys/kernel/debug/cxl/mbox/ || true
 # Should show: raw_allow_all
 # Check current RAW commands status
-sudo cat /sys/kernel/debug/cxl/mbox/raw_allow_all
+sudo cat /sys/kernel/debug/cxl/mbox/raw_allow_all || true
 # Shows: N (disabled) or Y (enabled)
 # Enable RAW Commands (Optional)
 # Enable RAW commands for testing
@@ -144,3 +154,4 @@ echo Y | sudo tee /sys/kernel/debug/cxl/mbox/raw_allow_all
 sudo cat /sys/kernel/debug/cxl/mbox/raw_allow_all
 # Should show: Y
 
+echo "Done. CXL modules installed under /lib/modules/${UNAME_R}/updates/drivers/cxl/"
